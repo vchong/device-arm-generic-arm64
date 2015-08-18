@@ -44,9 +44,6 @@ else
 GLOBAL_DEFINES += TIMER_ARM_GENERIC_SELECTED=CNTPS
 endif
 
-# Disable VFP and NEON for now
-ARM_WITHOUT_VFP_NEON := true
-
 #
 # GLOBAL definitions
 #
