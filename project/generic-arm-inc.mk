@@ -82,8 +82,9 @@ TRUSTY_PREBUILT_USER_TASKS :=
 
 # compiled from source
 TRUSTY_ALL_USER_TASKS := \
-	sample/ipc-unittest/main \
-	sample/ipc-unittest/srv \
+	keymaster \
+	gatekeeper \
+	storage \
 
 # This project requires trusty IPC
 WITH_TRUSTY_IPC := true
