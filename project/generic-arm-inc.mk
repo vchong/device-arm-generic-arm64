@@ -85,6 +85,11 @@ TRUSTY_ALL_USER_TASKS := \
 	keymaster \
 	gatekeeper \
 	storage \
+	sample/hwcrypto \
+
+# on generic-arm64 hwcrypto requires FAKE HWRNG and HWKEY services
+WITH_FAKE_HWRNG ?= true
+WITH_FAKE_HWKEY ?= true
 
 # This project requires trusty IPC
 WITH_TRUSTY_IPC := true
