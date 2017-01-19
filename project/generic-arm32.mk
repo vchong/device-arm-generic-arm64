@@ -14,5 +14,6 @@
 #
 
 KERNEL_32BIT := true
+DEBUG := 1
 
 include project/generic-arm-inc.mk

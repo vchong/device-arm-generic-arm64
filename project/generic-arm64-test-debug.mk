@@ -1,4 +1,4 @@
-# Copyright (C) 2015 The Android Open Source Project
+# Copyright (C) 2017 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,6 @@
 #
 
 KERNEL_32BIT := false
-DEBUG := 1
+DEBUG := 2
 
-include project/generic-arm-inc.mk
+include project/generic-arm-test-inc.mk
