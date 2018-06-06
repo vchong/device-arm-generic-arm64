@@ -30,6 +30,9 @@ QEMU_BUILD_BASE := $(abspath $(BUILDDIR)/qemu-build)
 QEMU_ARCH := aarch64
 include project/qemu-qemu-inc.mk
 
+EXTRA_BUILDRULES += external/trusty/test-runner/test-runner-inc.mk
+TEST_RUNNER_BIN := $(BUILDDIR)/test-runner/test-runner.bin
+
 RUN_QEMU_SCRIPT := $(BUILDDIR)/run-qemu
 
 ATF_OUT_COPIED_FILES := \
@@ -43,9 +46,9 @@ $(ATF_OUT_COPIED_FILES): $(ATF_OUT_DIR)/% : $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/%
 
 $(RUN_QEMU_SCRIPT): QEMU_BIN := $(QEMU_BIN)
 $(RUN_QEMU_SCRIPT): ATF_OUT_DIR := $(ATF_OUT_DIR)
-$(RUN_QEMU_SCRIPT): $(ATF_OUT_COPIED_FILES) .PHONY
+$(RUN_QEMU_SCRIPT): $(ATF_OUT_COPIED_FILES) $(TEST_RUNNER_BIN) .PHONY
 	ln -sf "$(abspath $(BUILDDIR)/lk.bin)" "$(ATF_OUT_DIR)/bl32.bin"
-	touch "$(ATF_OUT_DIR)/bl33.bin" #BL2 needs needs this, replace with bootloader to allow booting linux
+	ln -sf "$(abspath $(BUILDDIR)/test-runner/test-runner.bin)" "$(ATF_OUT_DIR)/bl33.bin"
 
 	@echo generating $@
 	@echo "#!/bin/sh" >$@
