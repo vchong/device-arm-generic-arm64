@@ -69,9 +69,9 @@ GLOBAL_DEFINES += MMU_IDENT_SIZE_SHIFT=38
 # Modules to be compiled into lk.bin
 #
 MODULES += \
-	lib/sm \
-	lib/trusty \
-	lib/memlog \
+	trusty/kernel/lib/sm \
+	trusty/kernel/lib/trusty \
+	trusty/kernel/lib/memlog \
 
 TRUSTY_USER_ARCH := arm
 
@@ -84,10 +84,10 @@ TRUSTY_PREBUILT_USER_TASKS :=
 
 # compiled from source
 TRUSTY_ALL_USER_TASKS := \
-	keymaster \
-	gatekeeper \
-	storage \
-	sample/hwcrypto \
+	trusty/user/app/keymaster \
+	trusty/user/app/gatekeeper \
+	trusty/user/app/storage \
+	trusty/user/app/sample/hwcrypto \
 
 # on generic-arm64 hwcrypto requires FAKE HWRNG and HWKEY services
 WITH_FAKE_HWRNG ?= true
