@@ -18,4 +18,6 @@ include project/generic-arm-inc.mk
 TRUSTY_ALL_USER_TASKS += \
 	trusty/user/app/sample/ipc-unittest/main \
 	trusty/user/app/sample/ipc-unittest/srv \
+	trusty/user/app/sample/app-mgmt-test/srv1 \
+	trusty/user/app/sample/app-mgmt-test/srv2 \
 
