@@ -17,6 +17,9 @@ PROJECT_QEMU_INC_LOCAL_DIR := $(GET_LOCAL_DIR)
 
 include project/$(QEMU_TRUSTY_PROJECT).mk
 
+MODULES += \
+	trusty/user/app/storage/rpmb_dev \
+
 ATF_DEBUG := 1
 ATF_PLAT := qemu
 ATF_WITH_TRUSTY_GENERIC_SERVICES := true
@@ -49,6 +52,7 @@ $(RUN_QEMU_SCRIPT): ATF_OUT_DIR := $(ATF_OUT_DIR)
 $(RUN_QEMU_SCRIPT): $(ATF_OUT_COPIED_FILES) $(TEST_RUNNER_BIN) .PHONY
 	ln -sf "$(abspath $(BUILDDIR)/lk.bin)" "$(ATF_OUT_DIR)/bl32.bin"
 	ln -sf "$(abspath $(BUILDDIR)/test-runner/test-runner.bin)" "$(ATF_OUT_DIR)/bl33.bin"
+	ln -sf "$(abspath $(BUILDDIR)/host_tools/rpmb_dev)" "$(ATF_OUT_DIR)/rpmb_dev"
 
 	@echo generating $@
 	@echo "#!/bin/sh" >$@
