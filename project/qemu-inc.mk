@@ -47,9 +47,14 @@ $(ATF_OUT_COPIED_FILES): $(ATF_OUT_DIR)/% : $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/%
 	@mkdir -p $(ATF_OUT_DIR)
 	@cp $< $@
 
+$(ATF_OUT_DIR)/RPMB_DATA: ATF_OUT_DIR := $(ATF_OUT_DIR)
+$(ATF_OUT_DIR)/RPMB_DATA: $(BUILDDIR)/host_tools/rpmb_dev
+	@echo Initialize rpmb device
+	$< --dev $(ATF_OUT_DIR)/RPMB_DATA --init --key "ea df 64 44 ea 65 5d 1c 87 27 d4 20 71 0d 53 42 dd 73 a3 38 63 e1 d7 94 c3 72 a6 ea e0 64 64 e6" --size 2048
+
 $(RUN_QEMU_SCRIPT): QEMU_BIN := $(QEMU_BIN)
 $(RUN_QEMU_SCRIPT): ATF_OUT_DIR := $(ATF_OUT_DIR)
-$(RUN_QEMU_SCRIPT): $(ATF_OUT_COPIED_FILES) $(TEST_RUNNER_BIN) .PHONY
+$(RUN_QEMU_SCRIPT): $(ATF_OUT_COPIED_FILES) $(TEST_RUNNER_BIN) $(ATF_OUT_DIR)/RPMB_DATA .PHONY
 	ln -sf "$(abspath $(BUILDDIR)/lk.bin)" "$(ATF_OUT_DIR)/bl32.bin"
 	ln -sf "$(abspath $(BUILDDIR)/test-runner/test-runner.bin)" "$(ATF_OUT_DIR)/bl33.bin"
 	ln -sf "$(abspath $(BUILDDIR)/host_tools/rpmb_dev)" "$(ATF_OUT_DIR)/rpmb_dev"
