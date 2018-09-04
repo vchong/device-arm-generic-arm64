@@ -21,4 +21,5 @@ TRUSTY_ALL_USER_TASKS += \
 	trusty/user/app/sample/ipc-unittest/main \
 	trusty/user/app/sample/ipc-unittest/srv \
 	trusty/user/app/sample/storage-unittest \
+	trusty/user/app/sample/timer \
 
