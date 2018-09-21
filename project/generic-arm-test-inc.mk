@@ -16,6 +16,7 @@
 include project/generic-arm-inc.mk
 
 TRUSTY_ALL_USER_TASKS += \
+	trusty/user/app/keymaster/device_unittest \
 	trusty/user/app/sample/app-mgmt-test/srv1 \
 	trusty/user/app/sample/app-mgmt-test/srv2 \
 	trusty/user/app/sample/ipc-unittest/main \
