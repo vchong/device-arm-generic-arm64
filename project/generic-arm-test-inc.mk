@@ -23,3 +23,6 @@ TRUSTY_ALL_USER_TASKS += \
 	trusty/user/app/sample/storage-unittest \
 	trusty/user/app/sample/timer \
 
+MODULES += \
+	trusty/kernel/app/smptest \
+
