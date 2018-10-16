@@ -23,7 +23,7 @@ QEMU_FINAL_ARGS=()
 QEMU_ARGS=(
     -nographic
     -cpu cortex-a57
-    -smp 1
+    -smp 4
     -m 1024
     -bios bl1.bin
     -d unimp
