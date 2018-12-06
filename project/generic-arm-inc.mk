@@ -73,7 +73,19 @@ MODULES += \
 	trusty/kernel/lib/trusty \
 	trusty/kernel/lib/memlog \
 
+#
+# Set user space arch
+#
+ifeq (true,$(call TOBOOL,$(KERNEL_32BIT)))
 TRUSTY_USER_ARCH := arm
+else
+ifeq (true,$(call TOBOOL,$(USER_32BIT)))
+TRUSTY_USER_ARCH := arm
+GLOBAL_DEFINES += USER_32BIT=1
+else
+TRUSTY_USER_ARCH := arm64
+endif
+endif
 
 #
 # user tasks to be compiled into lk.bin
