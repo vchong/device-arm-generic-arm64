@@ -16,6 +16,8 @@
 include project/generic-arm-inc.mk
 include trusty/kernel/kerneltests-inc.mk
 
+TEST_BUILD := true
+
 TRUSTY_BUILTIN_USER_TASKS += \
 	trusty/user/app/keymaster/device_unittest \
 	trusty/user/app/sample/app-mgmt-test/boot-start-srv \
@@ -23,9 +25,17 @@ TRUSTY_BUILTIN_USER_TASKS += \
 	trusty/user/app/sample/app-mgmt-test/never-start-srv \
 	trusty/user/app/sample/app-mgmt-test/port-start-srv \
 	trusty/user/app/sample/app-mgmt-test/restart-srv \
+	trusty/user/app/sample/app-mgmt-test/syscalls-test/aux \
+	trusty/user/app/sample/app-mgmt-test/syscalls-test/builtin \
+	trusty/user/app/sample/app-mgmt-test/syscalls-test/main \
 	trusty/user/app/sample/ipc-unittest/main \
 	trusty/user/app/sample/ipc-unittest/srv \
 	trusty/user/app/sample/libc-test \
 	trusty/user/app/sample/storage-unittest \
 	trusty/user/app/sample/timer \
+
+TRUSTY_LOADABLE_USER_TASKS += \
+	trusty/user/app/sample/app-mgmt-test/syscalls-test/main/test_apps/duplicate_port \
+	trusty/user/app/sample/app-mgmt-test/syscalls-test/main/test_apps/load_start \
+	trusty/user/app/sample/app-mgmt-test/syscalls-test/main/test_apps/port_start \
 
