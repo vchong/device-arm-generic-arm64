@@ -36,7 +36,9 @@ $(QEMU_MAKEFILE): QEMU_ROOT:=$(QEMU_ROOT)
 $(QEMU_MAKEFILE): QEMU_BUILD_BASE:=$(QEMU_BUILD_BASE)
 $(QEMU_MAKEFILE):
 	mkdir -p $(QEMU_BUILD_BASE)
-	cd $(QEMU_BUILD_BASE) && $(abspath $(QEMU_ROOT)/configure) --target-list=aarch64-softmmu,arm-softmmu
+	#--with-git=true sets the "git" program to /bin/true - it essentially disables git
+	#--disable-git-update may look like what we want, but it requests manual intervention, not disables git
+	cd $(QEMU_BUILD_BASE) && $(abspath $(QEMU_ROOT)/configure) --target-list=aarch64-softmmu,arm-softmmu --with-git=true
 
 $(QEMU_BIN): QEMU_BUILD_BASE:=$(QEMU_BUILD_BASE)
 $(QEMU_BIN): $(QEMU_MAKEFILE) .PHONY
