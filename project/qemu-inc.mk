@@ -33,6 +33,9 @@ QEMU_BUILD_BASE := $(abspath $(BUILDDIR)/qemu-build)
 QEMU_ARCH := aarch64
 include project/qemu-qemu-inc.mk
 
+LINUX_ARCH ?= $(ARCH)
+include project/linux-inc.mk
+
 EXTRA_BUILDRULES += external/trusty/test-runner/test-runner-inc.mk
 TEST_RUNNER_BIN := $(BUILDDIR)/test-runner/test-runner.bin
 
@@ -62,7 +65,7 @@ $(RUN_QEMU_SCRIPT): $(ATF_OUT_COPIED_FILES) $(TEST_RUNNER_BIN) $(ATF_OUT_DIR)/RP
 	@echo generating $@
 	@echo "#!/bin/sh" >$@
 	@echo 'cd "$(ATF_OUT_DIR)"' >>$@
-	@echo 'QEMU="$(QEMU_BIN)" ./run-qemu-helper "$$@"' >>$@
+	@echo 'KERNEL_DIR="$(LINUX_BUILD_DIR)" QEMU="$(QEMU_BIN)" ./run-qemu-helper "$$@"' >>$@
 	@chmod +x $@
 
 EXTRA_BUILDDEPS += $(RUN_QEMU_SCRIPT)

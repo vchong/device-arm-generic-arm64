@@ -15,4 +15,5 @@
 
 QEMU_TRUSTY_PROJECT := generic-arm32-test-debug
 TEST_RUNNER_ARCH := arm64
+LINUX_ARCH := arm64
 include project/qemu-inc.mk
