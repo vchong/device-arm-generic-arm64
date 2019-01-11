@@ -26,4 +26,5 @@ TRUSTY_ALL_USER_TASKS += \
 
 MODULES += \
 	trusty/kernel/app/smptest \
+	trusty/kernel/app/usercopytest \
 
