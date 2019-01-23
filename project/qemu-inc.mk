@@ -40,14 +40,33 @@ EXTRA_BUILDRULES += external/trusty/test-runner/test-runner-inc.mk
 TEST_RUNNER_BIN := $(BUILDDIR)/test-runner/test-runner.bin
 
 RUN_QEMU_SCRIPT := $(BUILDDIR)/run-qemu
+QEMU_CONFIG := $(BUILDDIR)/config.json
+
+$(ATF_OUT_DIR):
+	mkdir -p $@
+
+# For ATF bootloader semihosting calls, bl32 and bl33 need to be in place
+# For RPMB device emulation, test-runner expects to find rpmb_dev
+ATF_SYMLINKS := \
+	$(ATF_OUT_DIR)/bl32.bin \
+	$(ATF_OUT_DIR)/bl33.bin \
+	$(ATF_OUT_DIR)/rpmb_dev \
+
+$(ATF_OUT_DIR)/bl32.bin: $(BUILDDIR)/lk.bin $(ATF_OUT_DIR)
+	ln -sf $(abspath $<) $@
+
+$(ATF_OUT_DIR)/bl33.bin: $(TEST_RUNNER_BIN) $(ATF_OUT_DIR)
+	ln -sf $(abspath $<) $@
+
+$(ATF_OUT_DIR)/rpmb_dev: $(BUILDDIR)/host_tools/rpmb_dev $(ATF_OUT_DIR)
+	ln -sf $(abspath $<) $@
 
 ATF_OUT_COPIED_FILES := \
 	$(ATF_OUT_DIR)/firmware.android.dts \
 	$(ATF_OUT_DIR)/run-qemu-helper \
 
-$(ATF_OUT_COPIED_FILES): $(ATF_OUT_DIR)/% : $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/%
+$(ATF_OUT_COPIED_FILES): $(ATF_OUT_DIR)/% : $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/% $(ATF_OUT_DIR)
 	@echo copying $@
-	@mkdir -p $(ATF_OUT_DIR)
 	@cp $< $@
 
 $(ATF_OUT_DIR)/RPMB_DATA: ATF_OUT_DIR := $(ATF_OUT_DIR)
@@ -55,13 +74,23 @@ $(ATF_OUT_DIR)/RPMB_DATA: $(BUILDDIR)/host_tools/rpmb_dev
 	@echo Initialize rpmb device
 	$< --dev $(ATF_OUT_DIR)/RPMB_DATA --init --key "ea df 64 44 ea 65 5d 1c 87 27 d4 20 71 0d 53 42 dd 73 a3 38 63 e1 d7 94 c3 72 a6 ea e0 64 64 e6" --size 2048
 
+# Save variables to a json file to export paths known to the build system to
+# the test system
+$(QEMU_CONFIG): QEMU_BIN := $(QEMU_BIN)
+$(QEMU_CONFIG): ATF_OUT_DIR := $(ATF_OUT_DIR)
+$(QEMU_CONFIG): LINUX_BUILD_DIR := $(LINUX_BUILD_DIR)
+$(QEMU_CONFIG): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_DATA
+	@echo generating $@
+	@echo '{"linux": "$(LINUX_BUILD_DIR)", "atf": "$(ATF_OUT_DIR)", "qemu": "$(QEMU_BIN)"}' > $@
+
+EXTRA_BUILDDEPS += $(QEMU_CONFIG)
+
+# Create a wrapper script around run-qemu-helper which defaults arguments to
+# those needed to run this build
 $(RUN_QEMU_SCRIPT): QEMU_BIN := $(QEMU_BIN)
 $(RUN_QEMU_SCRIPT): ATF_OUT_DIR := $(ATF_OUT_DIR)
-$(RUN_QEMU_SCRIPT): $(ATF_OUT_COPIED_FILES) $(TEST_RUNNER_BIN) $(ATF_OUT_DIR)/RPMB_DATA .PHONY
-	ln -sf "$(abspath $(BUILDDIR)/lk.bin)" "$(ATF_OUT_DIR)/bl32.bin"
-	ln -sf "$(abspath $(BUILDDIR)/test-runner/test-runner.bin)" "$(ATF_OUT_DIR)/bl33.bin"
-	ln -sf "$(abspath $(BUILDDIR)/host_tools/rpmb_dev)" "$(ATF_OUT_DIR)/rpmb_dev"
-
+$(RUN_QEMU_SCRIPT): LINUX_BUILD_DIR := $(LINUX_BUILD_DIR)
+$(RUN_QEMU_SCRIPT): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_DATA
 	@echo generating $@
 	@echo "#!/bin/sh" >$@
 	@echo 'cd "$(ATF_OUT_DIR)"' >>$@
