@@ -40,7 +40,9 @@ EXTRA_BUILDRULES += external/trusty/test-runner/test-runner-inc.mk
 TEST_RUNNER_BIN := $(BUILDDIR)/test-runner/test-runner.bin
 
 RUN_QEMU_SCRIPT := $(BUILDDIR)/run-qemu
+RUN_SCRIPT := $(BUILDDIR)/run
 QEMU_CONFIG := $(BUILDDIR)/config.json
+QEMU_PY := $(BUILDDIR)/qemu.py
 
 $(ATF_OUT_DIR):
 	mkdir -p $@
@@ -74,6 +76,11 @@ $(ATF_OUT_DIR)/RPMB_DATA: $(BUILDDIR)/host_tools/rpmb_dev
 	@echo Initialize rpmb device
 	$< --dev $(ATF_OUT_DIR)/RPMB_DATA --init --key "ea df 64 44 ea 65 5d 1c 87 27 d4 20 71 0d 53 42 dd 73 a3 38 63 e1 d7 94 c3 72 a6 ea e0 64 64 e6" --size 2048
 
+# Copied so that the resulting build tree contains all files needed to run
+$(QEMU_PY): $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/qemu.py
+	@echo copying $@
+	@cp $< $@
+
 # Save variables to a json file to export paths known to the build system to
 # the test system
 $(QEMU_CONFIG): QEMU_BIN := $(QEMU_BIN)
@@ -98,3 +105,13 @@ $(RUN_QEMU_SCRIPT): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_
 	@chmod +x $@
 
 EXTRA_BUILDDEPS += $(RUN_QEMU_SCRIPT)
+
+# Create a wrapper around qemu.py which defaults the config
+# $(RUN_SCRIPT) will be the device-generic interface called by run-tests
+$(RUN_SCRIPT): $(QEMU_PY) $(QEMU_CONFIG)
+	@echo generating $@
+	@echo "#!/bin/sh" >$@
+	@echo 'python $(abspath $(QEMU_PY)) -c $(abspath $(QEMU_CONFIG)) "$$@"' >>$@
+	@chmod +x $@
+
+EXTRA_BUILDDEPS += $(RUN_SCRIPT)
