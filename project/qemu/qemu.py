@@ -210,6 +210,7 @@ class Runner(object):
         self.boot_tests = boot_tests if boot_tests else []
         self.android_tests = android_tests if android_tests else []
         self.interactive = interactive
+        self.verbose = verbose
         self.adb_transport = None
         self.dtb = None
 
@@ -293,30 +294,50 @@ class Runner(object):
             "arg=boottest " + ",".join(self.boot_tests)
         ]
 
+        if self.interactive:
+            args += ["-serial", "mon:stdio"]
+        elif self.verbose:
+            # This still leaves stdin connected, but doesn't connect a monitor
+            args += ["-serial", "stdio", "-monitor", "none"]
+        else:
+            # Silence debugging output
+            args += ["-serial", "null", "-monitor", "none"]
+
         cmd = [self.config.qemu] + args
+        # Test output is sent via semihosting, so don't disconnect stdout
         return subprocess.call(
             cmd,
             cwd=self.config.atf,
-            stdin=self.stdin,
-            stdout=self.stdout,
-            stderr=self.stderr)
+            stdin=self.stdin)
 
     def adb_bin(self):
         """Returns location of adb"""
         return "%s/out/host/linux-x86/bin/adb" % self.config.android
 
-    def adb(self, args, timeout=60):
+    def adb(self, args, timeout=60, force_output=False):
         """Runs an adb command
 
         If self.adb_transport is set, specializes the command to that
         transport to allow for multiple simultaneous tests.
+
+        Timeout specifies a timeout for the command in seconds.
+
+        If force_output is set true, will send results to stdout and
+        stderr regardless of the runner's preferences.
         """
         if self.adb_transport:
             args = ["-t", "%d" % self.adb_transport] + args
 
+        if force_output:
+            stdout = None
+            stderr = None
+        else:
+            stdout = self.stdout
+            stderr = self.stderr
+
         adb_proc = subprocess.Popen(
-            [self.adb_bin()] + args, stdin=self.stdin, stdout=self.stdout,
-            stderr=self.stderr)
+            [self.adb_bin()] + args, stdin=self.stdin, stdout=stdout,
+            stderr=stderr)
 
         # This code simulates the timeout= parameter due to no python 3
 
@@ -492,13 +513,14 @@ class Runner(object):
 
             # Prepend the machine since we don't need to edit it as in gen_dtb
             args = ["-machine", self.MACHINE] + args
-            # Logging and terminal monitor
-            args += ["-serial", "mon:stdio"]
 
             # This codepath should go away when test_runner is changed to
             # not use semihosting exit to report
             if self.boot_tests:
                 return [self.semihosting_run(args)]
+
+            # Logging and terminal monitor
+            args += ["-serial", "mon:stdio"]
 
             # If we're noninteractive (e.g. testing) we need a command channel
             # to tell the guest to exit
@@ -525,7 +547,8 @@ class Runner(object):
             # Run android tests
             for android_test in self.android_tests:
                 test_result = self.adb(["shell", android_test],
-                                       timeout=(60 * 5))
+                                       timeout=(60 * 5),
+                                       force_output=True)
                 test_results.append(test_result)
                 if not test_result:
                     break
