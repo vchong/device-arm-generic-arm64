@@ -526,7 +526,7 @@ class Runner(object):
             for android_test in self.android_tests:
                 test_result = self.adb(["shell", android_test],
                                        timeout=(60 * 5))
-                test_results += test_result
+                test_results.append(test_result)
                 if not test_result:
                     break
 
