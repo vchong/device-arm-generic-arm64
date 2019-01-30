@@ -25,6 +25,7 @@ TRUSTY_ALL_USER_TASKS += \
 	trusty/user/app/sample/timer \
 
 MODULES += \
+	trusty/kernel/app/consoletest \
 	trusty/kernel/app/smptest \
 	trusty/kernel/app/usercopytest \
 
