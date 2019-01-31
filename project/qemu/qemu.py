@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Run Trusty under QEMU in different configurations"""
 import argparse
+import fcntl
 import json
 import os
 import re
@@ -562,6 +563,9 @@ class Runner(object):
                 os.remove(self.dtb.name)
 
             unclean_exit = qemu_exit(command_dir, qemu_proc)
+
+            fcntl.fcntl(0, fcntl.F_SETFL,
+                        fcntl.fcntl(0, fcntl.F_GETFL) & ~os.O_NONBLOCK)
 
             if self.adb_transport:
                 # Disconnect ADB and wait for our port to be released by qemu
