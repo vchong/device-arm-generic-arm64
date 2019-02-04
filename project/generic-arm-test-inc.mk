@@ -20,8 +20,8 @@ TRUSTY_ALL_USER_TASKS += \
 	trusty/user/app/sample/app-mgmt-test/boot-start-srv \
 	trusty/user/app/sample/app-mgmt-test/client\
 	trusty/user/app/sample/app-mgmt-test/never-start-srv \
-	trusty/user/app/sample/app-mgmt-test/srv1 \
-	trusty/user/app/sample/app-mgmt-test/srv2 \
+	trusty/user/app/sample/app-mgmt-test/port-start-srv \
+	trusty/user/app/sample/app-mgmt-test/restart-srv \
 	trusty/user/app/sample/ipc-unittest/main \
 	trusty/user/app/sample/ipc-unittest/srv \
 	trusty/user/app/sample/storage-unittest \
