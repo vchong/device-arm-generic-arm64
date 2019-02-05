@@ -215,7 +215,8 @@ class Runner(object):
                  android_tests=None,
                  interactive=False,
                  verbose=False,
-                 rpmb=True):
+                 rpmb=True,
+                 debug=False):
         """Initializes the runner with provided settings.
 
         See .run() for the meanings of these.
@@ -224,6 +225,7 @@ class Runner(object):
         self.boot_tests = boot_tests if boot_tests else []
         self.android_tests = android_tests if android_tests else []
         self.interactive = interactive
+        self.debug = debug
         self.verbose = verbose
         self.adb_transport = None
         self.temp_files = []
@@ -246,6 +248,20 @@ class Runner(object):
             self.stdin = None
         else:
             self.stdin = devnull
+
+        if self.boot_tests and self.debug:
+            print """\
+Warning: Test selection does not work when --debug is set.
+To run a test in test runner, run in GDB:
+
+target remote :1234
+break host_get_cmdline
+c
+next 6
+set cmdline="boottest your.port.here"
+set cmdline_len=sizeof("boottest your.port.here")-1
+c
+"""
 
     def get_qemu_arg_temp_file(self):
         """Returns a temp file that will be deleted after qemu exits."""
@@ -527,6 +543,14 @@ class Runner(object):
         to the serial console/monitor, and they are responsible for
         terminating execution.
 
+        If debug is on, the main QEMU instance will be launched with -S and
+        -s, which pause the CPU rather than booting, and starts a gdb server
+        on port 1234 respectively.
+
+        Note that if the boot_tests is specified, that argument will not be
+        correctly read because semihosting-config does not work under the
+        debugger.
+
         Returns:
           A list of return codes for the provided tests.
           A negative return code indicates an internal tool failure.
@@ -570,6 +594,9 @@ class Runner(object):
             # Prepend the machine since we don't need to edit it as in gen_dtb
             args = ["-machine", self.MACHINE] + args
 
+            if self.debug:
+                args += ["-s", "-S"]
+
             # This codepath should go away when test_runner is changed to
             # not use semihosting exit to report
             if self.boot_tests:
@@ -598,6 +625,9 @@ class Runner(object):
                 stdin=self.stdin,
                 stdout=self.stdout,
                 stderr=self.stderr)
+
+            if self.debug:
+                print "Run gdb and \"target remote :1234\" to debug"
 
             try:
                 # Bring ADB up talking to the command port
@@ -643,6 +673,7 @@ def main():
     argument_parser.add_argument("-c", "--config", type=file)
     argument_parser.add_argument("--headless", action="store_true")
     argument_parser.add_argument("-v", "--verbose", action="store_true")
+    argument_parser.add_argument("--debug", action="store_true")
     argument_parser.add_argument("--boot-test", action="append")
     argument_parser.add_argument("--shell-command", action="append")
     argument_parser.add_argument("--android")
@@ -666,7 +697,8 @@ def main():
                     android_tests=args.shell_command,
                     interactive=not args.headless,
                     verbose=args.verbose,
-                    rpmb=not args.disable_rpmb)
+                    rpmb=not args.disable_rpmb,
+                    debug=args.debug)
 
     try:
         results = runner.run()
