@@ -70,11 +70,12 @@ class Config(object):
     """Stores a QEMU configuration for use with the runner
 
     Attributes:
-        android: Path to a built Android tree or prebuilt.
-        linux:   Path to a built Linux kernel tree or prebuilt.
-        atf:     Path to the ATF build to use.
-        qemu:    Path to the emulator to use.
-        rpmbd:   Path to the rpmb daemon to use.
+        android:          Path to a built Android tree or prebuilt.
+        linux:            Path to a built Linux kernel tree or prebuilt.
+        atf:              Path to the ATF build to use.
+        qemu:             Path to the emulator to use
+        rpmbd:            Path to the rpmb daemon to use.
+        extra_qemu_flags: Extra flags to pass to QEMU.
     Setting android or linux to None will result in a QEMU which starts
     without those components.
     """
@@ -98,6 +99,7 @@ class Config(object):
         self.atf = config_dict.get("atf")
         self.qemu = config_dict.get("qemu", "qemu-system-aarch64")
         self.rpmbd = config_dict.get("rpmbd")
+        self.extra_qemu_flags = config_dict.get("extra_qemu_flags", [])
 
 
 def alloc_ports():
@@ -317,7 +319,7 @@ c
             dump_dtb_cmd = [
                 self.config.qemu, "-machine",
                 "%s,dumpdtb=%s" % (self.MACHINE, dtb_gen.name)
-            ] + args
+            ] + [arg for arg in args if arg != "-S"]
             returncode = subprocess.call(dump_dtb_cmd)
             if returncode != 0:
                 raise RunnerGenericError("dumping dtb failed with %d" %
@@ -531,6 +533,9 @@ c
         if self.config.android:
             args += self.android_drives_args()
 
+        # Append configured extra flags
+        args += self.config.extra_qemu_flags
+
         return args
 
     def run(self):
@@ -681,6 +686,7 @@ def main():
     argument_parser.add_argument("--atf")
     argument_parser.add_argument("--qemu")
     argument_parser.add_argument("--disable-rpmb", action="store_true")
+    argument_parser.add_argument("extra_qemu_flags", nargs="*")
     args = argument_parser.parse_args()
 
     config = Config(args.config)
@@ -692,6 +698,8 @@ def main():
         config.atf = args.atf
     if args.qemu:
         config.qemu = args.qemu
+    if args.extra_qemu_flags:
+        config.extra_qemu_flags += args.extra_qemu_flags
 
     runner = Runner(config, boot_tests=args.boot_test,
                     android_tests=args.shell_command,
