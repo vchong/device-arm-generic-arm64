@@ -542,21 +542,24 @@ class Runner(object):
                 stdout=self.stdout,
                 stderr=self.stderr)
 
-            # Bring ADB up talking to the command port
-            self.adb_up(ports[1])
+            try:
+                # Bring ADB up talking to the command port
+                self.adb_up(ports[1])
 
-            # Run android tests
-            for android_test in self.android_tests:
-                test_result = self.adb(["shell", android_test],
-                                       timeout=(60 * 5),
-                                       force_output=True)
-                test_results.append(test_result)
-                if not test_result:
-                    break
-
-            if self.interactive:
-                # When interactive, the user is responsible for quitting qemu
-                qemu_proc.wait()
+                # Run android tests
+                for android_test in self.android_tests:
+                    test_result = self.adb(["shell", android_test],
+                                           timeout=(60 * 5),
+                                           force_output=True)
+                    test_results.append(test_result)
+                    if not test_result:
+                        break
+            # Finally is used here to ensure that ADB failures do not take away
+            # the user's serial console in interactive mode.
+            finally:
+                if self.interactive:
+                    # The user is responsible for quitting QEMU
+                    qemu_proc.wait()
         finally:
             # Clean up generated device tree
             if self.dtb:
