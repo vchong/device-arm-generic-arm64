@@ -20,6 +20,8 @@ include project/$(QEMU_TRUSTY_PROJECT).mk
 MODULES += \
 	trusty/user/app/storage/rpmb_dev \
 
+RPMB_DEV := $(BUILDDIR)/host_tools/rpmb_dev
+
 ATF_DEBUG := 1
 ATF_PLAT := qemu
 ATF_WITH_TRUSTY_GENERIC_SERVICES := true
@@ -48,19 +50,14 @@ $(ATF_OUT_DIR):
 	mkdir -p $@
 
 # For ATF bootloader semihosting calls, bl32 and bl33 need to be in place
-# For RPMB device emulation, test-runner expects to find rpmb_dev
 ATF_SYMLINKS := \
 	$(ATF_OUT_DIR)/bl32.bin \
 	$(ATF_OUT_DIR)/bl33.bin \
-	$(ATF_OUT_DIR)/rpmb_dev \
 
 $(ATF_OUT_DIR)/bl32.bin: $(BUILDDIR)/lk.bin $(ATF_OUT_DIR)
 	ln -sf $(abspath $<) $@
 
 $(ATF_OUT_DIR)/bl33.bin: $(TEST_RUNNER_BIN) $(ATF_OUT_DIR)
-	ln -sf $(abspath $<) $@
-
-$(ATF_OUT_DIR)/rpmb_dev: $(BUILDDIR)/host_tools/rpmb_dev $(ATF_OUT_DIR)
 	ln -sf $(abspath $<) $@
 
 ATF_OUT_COPIED_FILES := \
@@ -72,7 +69,7 @@ $(ATF_OUT_COPIED_FILES): $(ATF_OUT_DIR)/% : $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/%
 	@cp $< $@
 
 $(ATF_OUT_DIR)/RPMB_DATA: ATF_OUT_DIR := $(ATF_OUT_DIR)
-$(ATF_OUT_DIR)/RPMB_DATA: $(BUILDDIR)/host_tools/rpmb_dev
+$(ATF_OUT_DIR)/RPMB_DATA: $(RPMB_DEV)
 	@echo Initialize rpmb device
 	$< --dev $(ATF_OUT_DIR)/RPMB_DATA --init --key "ea df 64 44 ea 65 5d 1c 87 27 d4 20 71 0d 53 42 dd 73 a3 38 63 e1 d7 94 c3 72 a6 ea e0 64 64 e6" --size 2048
 
@@ -87,9 +84,10 @@ $(QEMU_CONFIG): QEMU_BIN := $(QEMU_BIN)
 $(QEMU_CONFIG): ATF_OUT_DIR := $(ATF_OUT_DIR)
 $(QEMU_CONFIG): LINUX_BUILD_DIR := $(LINUX_BUILD_DIR)
 $(QEMU_CONFIG): ANDROID_PREBUILT := $(abspath trusty/prebuilts/aosp/android)
-$(QEMU_CONFIG): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_DATA $(ANDROID_PREBUILT)
+$(QEMU_CONFIG): RPMB_DEV := $(RPMB_DEV)
+$(QEMU_CONFIG): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_DATA
 	@echo generating $@
-	@echo '{"linux": "$(LINUX_BUILD_DIR)", "atf": "$(ATF_OUT_DIR)", "qemu": "$(QEMU_BIN)", "android": "$(ANDROID_PREBUILT)"}' > $@
+	@echo '{"linux": "$(LINUX_BUILD_DIR)", "atf": "$(ATF_OUT_DIR)", "qemu": "$(QEMU_BIN)", "android": "$(ANDROID_PREBUILT)", "rpmbd": "$(RPMB_DEV)"}' > $@
 
 EXTRA_BUILDDEPS += $(QEMU_CONFIG)
 

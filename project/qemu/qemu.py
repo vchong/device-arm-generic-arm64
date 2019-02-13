@@ -73,7 +73,8 @@ class Config(object):
         android: Path to a built Android tree or prebuilt.
         linux:   Path to a built Linux kernel tree or prebuilt.
         atf:     Path to the ATF build to use.
-        qemu:    Path to the emulator to use
+        qemu:    Path to the emulator to use.
+        rpmbd:   Path to the rpmb daemon to use.
     Setting android or linux to None will result in a QEMU which starts
     without those components.
     """
@@ -96,6 +97,7 @@ class Config(object):
         self.linux = config_dict.get("linux")
         self.atf = config_dict.get("atf")
         self.qemu = config_dict.get("qemu", "qemu-system-aarch64")
+        self.rpmbd = config_dict.get("rpmbd")
 
 
 def alloc_ports():
@@ -199,7 +201,8 @@ class Runner(object):
 
     BASIC_ARGS = [
         "-nographic", "-cpu", "cortex-a57", "-smp", "4", "-m", "1024", "-d",
-        "unimp", "-semihosting-config", "enable,target=native", "-no-acpi"
+        "unimp", "-semihosting-config", "enable,target=native", "-no-acpi",
+        "-device", "virtio-serial-device",
     ]
 
     LINUX_ARGS = (
@@ -211,7 +214,8 @@ class Runner(object):
                  boot_tests=None,
                  android_tests=None,
                  interactive=False,
-                 verbose=False):
+                 verbose=False,
+                 rpmb=True):
         """Initializes the runner with provided settings.
 
         See .run() for the meanings of these.
@@ -223,6 +227,9 @@ class Runner(object):
         self.verbose = verbose
         self.adb_transport = None
         self.dtb = None
+        self.use_rpmb = rpmb
+        self.rpmb_proc = None
+        self.rpmb_sock_dir = None
 
         # Python 2.7 does not have subprocess.DEVNULL, emulate it
         devnull = open(os.devnull, "r+")
@@ -260,6 +267,28 @@ class Runner(object):
         args += self.drive_args("vendor", 1)
         args += self.drive_args("system", 0)
         return args
+
+    def rpmb_up(self):
+        """Brings up the rpmb daemon, returning QEMU args to connect"""
+        rpmb_data = "%s/RPMB_DATA" % self.config.atf
+        self.rpmb_sock_dir = tempfile.mkdtemp()
+        rpmb_sock = "%s/rpmb" % self.rpmb_sock_dir
+        rpmb_proc = subprocess.Popen([self.config.rpmbd,
+                                      "-d", rpmb_data,
+                                      "--sock", rpmb_sock])
+        self.rpmb_proc = rpmb_proc
+
+        return ["-device", "virtserialport,chardev=rpmb0,name=rpmb0",
+                "-chardev", "socket,id=rpmb0,path=%s" % rpmb_sock]
+
+    def rpmb_down(self):
+        """Kills the running rpmb daemon, cleaning up its socket directory"""
+        if self.rpmb_proc:
+            self.rpmb_proc.kill()
+            self.rpmb_proc = None
+        if self.rpmb_sock_dir:
+            shutil.rmtree(self.rpmb_sock_dir)
+            self.rpmb_sock_dir = None
 
     def gen_dtb(self, args):
         """Computes a trusty device tree, returning a file for it"""
@@ -304,14 +333,16 @@ class Runner(object):
             "arg=boottest " + ",".join(self.boot_tests)
         ]
 
+        # Prepend the serial port so that it is the *first* port and avoid
+        # conflicting with rpmb0.
         if self.interactive:
-            args += ["-serial", "mon:stdio"]
+            args = ["-serial", "mon:stdio"] + args
         elif self.verbose:
             # This still leaves stdin connected, but doesn't connect a monitor
-            args += ["-serial", "stdio", "-monitor", "none"]
+            args = ["-serial", "stdio", "-monitor", "none"] + args
         else:
             # Silence debugging output
-            args += ["-serial", "null", "-monitor", "none"]
+            args = ["-serial", "null", "-monitor", "none"] + args
 
         cmd = [self.config.qemu] + args
         # Test output is sent via semihosting, so don't disconnect stdout
@@ -525,6 +556,9 @@ class Runner(object):
         self.dtb = None
 
         try:
+            if self.use_rpmb:
+                args += self.rpmb_up()
+
             if self.config.linux:
                 args += self.gen_dtb(args)
 
@@ -537,7 +571,9 @@ class Runner(object):
                 return [self.semihosting_run(args)]
 
             # Logging and terminal monitor
-            args += ["-serial", "mon:stdio"]
+            # Prepend so that it is the *first* serial port and avoid
+            # conflicting with rpmb0.
+            args = ["-serial", "mon:stdio"] + args
 
             # If we're noninteractive (e.g. testing) we need a command channel
             # to tell the guest to exit
@@ -586,6 +622,8 @@ class Runner(object):
             fcntl.fcntl(0, fcntl.F_SETFL,
                         fcntl.fcntl(0, fcntl.F_GETFL) & ~os.O_NONBLOCK)
 
+            self.rpmb_down()
+
             if self.adb_transport:
                 # Disconnect ADB and wait for our port to be released by qemu
                 self.adb_down(ports[1])
@@ -606,6 +644,7 @@ def main():
     argument_parser.add_argument("--linux")
     argument_parser.add_argument("--atf")
     argument_parser.add_argument("--qemu")
+    argument_parser.add_argument("--disable-rpmb", action="store_true")
     args = argument_parser.parse_args()
 
     config = Config(args.config)
@@ -621,7 +660,8 @@ def main():
     runner = Runner(config, boot_tests=args.boot_test,
                     android_tests=args.shell_command,
                     interactive=not args.headless,
-                    verbose=args.verbose)
+                    verbose=args.verbose,
+                    rpmb=not args.disable_rpmb)
 
     try:
         results = runner.run()
