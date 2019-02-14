@@ -399,6 +399,13 @@ class Runner(object):
         self.check_adb(["root"])
         self.check_adb(["wait-for-device"])
 
+        # Files put onto the data partition in the Android build will not
+        # actually be populated into userdata.img when make dist is used.
+        # To work around this, we manually update /data once the device is
+        # booted by pushing it the files that would have been there.
+        userdata = "%s/out/target/product/trusty/data" % self.config.android
+        self.check_adb(["push", userdata, "/"])
+
     def adb_down(self, port):
         """Cleans up after adb connection to adbd on selected port"""
         self.adb_transport = None

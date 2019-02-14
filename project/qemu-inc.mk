@@ -86,9 +86,10 @@ $(QEMU_PY): $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/qemu.py
 $(QEMU_CONFIG): QEMU_BIN := $(QEMU_BIN)
 $(QEMU_CONFIG): ATF_OUT_DIR := $(ATF_OUT_DIR)
 $(QEMU_CONFIG): LINUX_BUILD_DIR := $(LINUX_BUILD_DIR)
-$(QEMU_CONFIG): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_DATA
+$(QEMU_CONFIG): ANDROID_PREBUILT := $(abspath trusty/prebuilts/aosp/android)
+$(QEMU_CONFIG): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_DATA $(ANDROID_PREBUILT)
 	@echo generating $@
-	@echo '{"linux": "$(LINUX_BUILD_DIR)", "atf": "$(ATF_OUT_DIR)", "qemu": "$(QEMU_BIN)"}' > $@
+	@echo '{"linux": "$(LINUX_BUILD_DIR)", "atf": "$(ATF_OUT_DIR)", "qemu": "$(QEMU_BIN)", "android": "$(ANDROID_PREBUILT)"}' > $@
 
 EXTRA_BUILDDEPS += $(QEMU_CONFIG)
 
