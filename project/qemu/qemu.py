@@ -157,8 +157,17 @@ def qemu_exit(command_dir, qemu_proc):
     if command_dir:
         # Ask QEMU to quit
         if qemu_proc and (qemu_proc.poll() is None):
-            with open("%s/com.in" % command_dir, "w") as com_pipe:
-                com_pipe.write("quit\n")
+            # Open O_NONBLOCK to deal with a potential race between
+            # qemu_proc.poll() and the open call. The poll() is purely
+            # advisory now.
+            try:
+                com_pipe = os.open("%s/com.in" % command_dir,
+                                   os.O_NONBLOCK | os.O_WRONLY)
+                os.write(com_pipe, "quit\n")
+                os.close(com_pipe)
+            except OSError:
+                pass
+
             # If it doesn't die immediately, wait a second
             if qemu_proc.poll() is None:
                 time.sleep(1)
