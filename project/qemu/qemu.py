@@ -226,7 +226,7 @@ class Runner(object):
         self.interactive = interactive
         self.verbose = verbose
         self.adb_transport = None
-        self.dtb = None
+        self.temp_files = []
         self.use_rpmb = rpmb
         self.rpmb_proc = None
         self.rpmb_sock_dir = None
@@ -247,6 +247,11 @@ class Runner(object):
         else:
             self.stdin = devnull
 
+    def get_qemu_arg_temp_file(self):
+        """Returns a temp file that will be deleted after qemu exits."""
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        self.temp_files.append(tmp.name)
+        return tmp
 
     def drive_args(self, image, index):
         """Generates arguments for mapping a drive"""
@@ -315,16 +320,16 @@ class Runner(object):
             dts += firmware_file.read()
 
         # Subprocess closes dtb, so we can't allow it to autodelete
-        self.dtb = tempfile.NamedTemporaryFile(delete=False)
+        dtb = self.get_qemu_arg_temp_file()
         dts_to_dtb_cmd = [dtc, "-q", "-O", "dtb"]
         dts_to_dtb = subprocess.Popen(dts_to_dtb_cmd,
                                       stdin=subprocess.PIPE,
-                                      stdout=self.dtb)
+                                      stdout=dtb)
         dts_to_dtb.communicate(dts)
         dts_to_dtb_ret = dts_to_dtb.wait()
         if dts_to_dtb_ret:
             raise RunnerError("dts_to_dtb failed with %d" % dts_to_dtb_ret)
-        return ["-dtb", self.dtb.name]
+        return ["-dtb", dtb.name]
 
     def semihosting_run(self, args):
         """Runs QEMU assuming it will quit with semihosting"""
@@ -553,7 +558,7 @@ class Runner(object):
 
         # Resource exists in multiple functions, wants to use the same
         # cleanup block regardless
-        self.dtb = None
+        self.temp_files = []
 
         try:
             if self.use_rpmb:
@@ -614,8 +619,8 @@ class Runner(object):
                     qemu_proc.wait()
         finally:
             # Clean up generated device tree
-            if self.dtb:
-                os.remove(self.dtb.name)
+            for temp_file in self.temp_files:
+                os.remove(temp_file)
 
             unclean_exit = qemu_exit(command_dir, qemu_proc)
 
