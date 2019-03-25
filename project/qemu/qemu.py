@@ -202,7 +202,7 @@ class Runner(object):
     BASIC_ARGS = [
         "-nographic", "-cpu", "cortex-a57", "-smp", "4", "-m", "1024", "-d",
         "unimp", "-semihosting-config", "enable,target=native", "-no-acpi",
-        "-device", "virtio-serial-device",
+        "-device", "virtio-serial",
     ]
 
     LINUX_ARGS = (
