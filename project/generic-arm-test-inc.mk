@@ -16,7 +16,7 @@
 include project/generic-arm-inc.mk
 include trusty/kernel/kerneltests-inc.mk
 
-TRUSTY_ALL_USER_TASKS += \
+TRUSTY_BUILTIN_USER_TASKS += \
 	trusty/user/app/keymaster/device_unittest \
 	trusty/user/app/sample/app-mgmt-test/boot-start-srv \
 	trusty/user/app/sample/app-mgmt-test/client\

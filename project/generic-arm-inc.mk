@@ -95,7 +95,7 @@ endif
 TRUSTY_PREBUILT_USER_TASKS :=
 
 # compiled from source
-TRUSTY_ALL_USER_TASKS := \
+TRUSTY_BUILTIN_USER_TASKS := \
 	trusty/user/app/keymaster \
 	trusty/user/app/gatekeeper \
 	trusty/user/app/storage \
