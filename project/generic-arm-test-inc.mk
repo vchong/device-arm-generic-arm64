@@ -14,6 +14,7 @@
 #
 
 include project/generic-arm-inc.mk
+include trusty/kernel/kerneltests-inc.mk
 
 TRUSTY_ALL_USER_TASKS += \
 	trusty/user/app/keymaster/device_unittest \
@@ -27,9 +28,4 @@ TRUSTY_ALL_USER_TASKS += \
 	trusty/user/app/sample/libc-test \
 	trusty/user/app/sample/storage-unittest \
 	trusty/user/app/sample/timer \
-
-MODULES += \
-	trusty/kernel/app/consoletest \
-	trusty/kernel/app/smptest \
-	trusty/kernel/app/usercopytest \
 
