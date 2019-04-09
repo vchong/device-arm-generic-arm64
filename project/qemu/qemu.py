@@ -301,6 +301,20 @@ c
                                       "--sock", rpmb_sock])
         self.rpmb_proc = rpmb_proc
 
+        # Wait for RPMB socket to appear to avoid a race with QEMU
+        test_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        tries = 0
+        max_tries = 10
+        while True:
+            tries += 1
+            try:
+                test_sock.connect(rpmb_sock)
+                break
+            except socket.error as exn:
+                if tries >= max_tries:
+                    raise exn
+                time.sleep(1)
+
         return ["-device", "virtserialport,chardev=rpmb0,name=rpmb0",
                 "-chardev", "socket,id=rpmb0,path=%s" % rpmb_sock]
 
