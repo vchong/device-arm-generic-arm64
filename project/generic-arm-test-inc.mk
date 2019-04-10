@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 
+include trusty/kernel/lib/ubsan/enable.mk
+
 include project/generic-arm-inc.mk
 include trusty/kernel/kerneltests-inc.mk
 include trusty/user/base/usertests-inc.mk

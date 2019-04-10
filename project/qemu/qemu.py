@@ -655,7 +655,7 @@ c
                 # Run android tests
                 for android_test in self.android_tests:
                     test_result = self.adb(["shell", android_test],
-                                           timeout=(60 * 5),
+                                           timeout=(60 * 10),
                                            force_output=True)
                     test_results.append(test_result)
                     if not test_result:
