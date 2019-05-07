@@ -154,7 +154,7 @@ def gen_command_dir():
     return command_dir, command_args
 
 
-def qemu_exit(command_dir, qemu_proc):
+def qemu_exit(command_dir, qemu_proc, has_error, debug_on_error):
     """Ensures QEMU is terminated"""
     unclean_exit = False
 
@@ -167,7 +167,23 @@ def qemu_exit(command_dir, qemu_proc):
             try:
                 com_pipe = os.open("%s/com.in" % command_dir,
                                    os.O_NONBLOCK | os.O_WRONLY)
+                if has_error:
+                    os.write(com_pipe, "info registers -a\n")
+                    if debug_on_error:
+                        os.write(com_pipe, "gdbserver\n")
+                        try:
+                            raw_input("Connect gdb, press enter when done ")
+                        except:
+                            pass
                 os.write(com_pipe, "quit\n")
+                if has_error:
+                    sys.stdout.flush()
+                    sys.stderr.write("QEMU exit register dump:\n")
+                    with open("%s/com.out" % command_dir, "r") as com_pipe_out:
+                        for line in com_pipe_out:
+                            if not (line.startswith("QEMU") or
+                                    line.startswith("(qemu)")):
+                                sys.stderr.write(line)
                 os.close(com_pipe)
             except OSError:
                 pass
@@ -218,7 +234,8 @@ class Runner(object):
                  interactive=False,
                  verbose=False,
                  rpmb=True,
-                 debug=False):
+                 debug=False,
+                 debug_on_error=False):
         """Initializes the runner with provided settings.
 
         See .run() for the meanings of these.
@@ -234,6 +251,8 @@ class Runner(object):
         self.use_rpmb = rpmb
         self.rpmb_proc = None
         self.rpmb_sock_dir = None
+        self.debug_on_error = debug_on_error
+        self.dump_stdout_on_error = False
 
         # Python 2.7 does not have subprocess.DEVNULL, emulate it
         devnull = open(os.devnull, "r+")
@@ -242,8 +261,9 @@ class Runner(object):
             self.stdout = None
             self.stderr = None
         else:
-            self.stdout = devnull
-            self.stderr = devnull
+            self.stdout = tempfile.TemporaryFile()
+            self.stderr = subprocess.STDOUT
+            self.dump_stdout_on_error = True
 
         # If we're interactive connect stdin to the user
         if self.interactive:
@@ -264,6 +284,13 @@ set cmdline="boottest your.port.here"
 set cmdline_len=sizeof("boottest your.port.here")-1
 c
 """
+
+    def error_dump_output(self):
+        if self.dump_stdout_on_error:
+            sys.stdout.flush()
+            sys.stderr.write("System log:\n")
+            self.stdout.seek(0)
+            sys.stderr.write(self.stdout.read())
 
     def get_qemu_arg_temp_file(self):
         """Returns a temp file that will be deleted after qemu exits."""
@@ -598,6 +625,7 @@ c
         command_dir = None
 
         qemu_proc = None
+        has_error = False
 
         # Resource exists in multiple functions, wants to use the same
         # cleanup block regardless
@@ -658,7 +686,8 @@ c
                                            timeout=(60 * 10),
                                            force_output=True)
                     test_results.append(test_result)
-                    if not test_result:
+                    if test_result:
+                        has_error = True
                         break
             # Finally is used here to ensure that ADB failures do not take away
             # the user's serial console in interactive mode.
@@ -666,12 +695,20 @@ c
                 if self.interactive:
                     # The user is responsible for quitting QEMU
                     qemu_proc.wait()
+        except:
+            has_error = True
+            raise
         finally:
             # Clean up generated device tree
             for temp_file in self.temp_files:
                 os.remove(temp_file)
 
-            unclean_exit = qemu_exit(command_dir, qemu_proc)
+            if has_error:
+                self.error_dump_output()
+
+            unclean_exit = qemu_exit(command_dir, qemu_proc,
+                                     has_error=has_error,
+                                     debug_on_error=self.debug_on_error)
 
             fcntl.fcntl(0, fcntl.F_SETFL,
                         fcntl.fcntl(0, fcntl.F_GETFL) & ~os.O_NONBLOCK)
@@ -693,6 +730,7 @@ def main():
     argument_parser.add_argument("--headless", action="store_true")
     argument_parser.add_argument("-v", "--verbose", action="store_true")
     argument_parser.add_argument("--debug", action="store_true")
+    argument_parser.add_argument("--debug-on-error", action="store_true")
     argument_parser.add_argument("--boot-test", action="append")
     argument_parser.add_argument("--shell-command", action="append")
     argument_parser.add_argument("--android")
@@ -720,7 +758,8 @@ def main():
                     interactive=not args.headless,
                     verbose=args.verbose,
                     rpmb=not args.disable_rpmb,
-                    debug=args.debug)
+                    debug=args.debug,
+                    debug_on_error=args.debug_on_error)
 
     try:
         results = runner.run()
