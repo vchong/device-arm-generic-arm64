@@ -38,7 +38,7 @@ include project/qemu-qemu-inc.mk
 LINUX_ARCH ?= $(ARCH)
 include project/linux-inc.mk
 
-EXTRA_BUILDRULES += external/trusty/test-runner/test-runner-inc.mk
+EXTRA_BUILDRULES += external/trusty/bootloader/test-runner/test-runner-inc.mk
 TEST_RUNNER_BIN := $(BUILDDIR)/test-runner/test-runner.bin
 
 RUN_QEMU_SCRIPT := $(BUILDDIR)/run-qemu
