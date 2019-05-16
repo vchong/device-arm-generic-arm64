@@ -96,10 +96,11 @@ TRUSTY_PREBUILT_USER_TASKS :=
 
 # compiled from source
 TRUSTY_BUILTIN_USER_TASKS := \
-	trusty/user/app/keymaster \
+	trusty/user/app/avb \
 	trusty/user/app/gatekeeper \
-	trusty/user/app/storage \
+	trusty/user/app/keymaster \
 	trusty/user/app/sample/hwcrypto \
+	trusty/user/app/storage \
 
 # on generic-arm64 hwcrypto requires FAKE HWRNG and HWKEY services
 WITH_FAKE_HWRNG ?= true
