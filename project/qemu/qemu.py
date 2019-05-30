@@ -472,11 +472,14 @@ c
         if code != 0:
             raise AdbFailure(args, code)
 
-    def scan_transport(self, port):
+    def scan_transport(self, port, expect_none=False):
         """Given a port and `adb devices -l`, find the transport id"""
         output = subprocess.check_output([self.adb_bin(), "devices", "-l"])
         match = re.search(r"localhost:%d.*transport_id:(\d+)" % port, output)
         if not match:
+            if expect_none:
+                self.adb_transport = None
+                return
             print "Failed to find transport for port %d in \n%s" % (port,
                                                                     output)
         self.adb_transport = int(match.group(1))
@@ -512,7 +515,6 @@ c
 
     def adb_down(self, port):
         """Cleans up after adb connection to adbd on selected port"""
-        self.adb_transport = None
         self.check_adb(["disconnect", "localhost:%d" % port])
 
         # Wait until QEMU's forward has expired
@@ -520,9 +522,11 @@ c
         connect_tries = 0
         while True:
             try:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.connect(("localhost", port))
-                sock.close()
+                self.scan_transport(port, expect_none=True)
+                if not self.adb_transport:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.connect(("localhost", port))
+                    sock.close()
                 connect_tries += 1
                 if connect_tries >= CONNECT_MAX_TRIES:
                     raise Timeout("Wait for port forward to go away",
