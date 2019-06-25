@@ -36,6 +36,12 @@ else
 
 KERNEL_BASE        := 0xe0000000
 
+# ASLR is allowed on 32-bit platforms, but they are usually more space
+# conscious, and the extra page tables and weight from PIE may be more than
+# they want to pay.
+# Set ASLR := true explicitly if you are a 32-bit platform and want ASLR.
+ASLR               ?= false
+
 endif
 
 # select timer
