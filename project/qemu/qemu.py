@@ -251,6 +251,8 @@ class Runner(object):
         self.use_rpmb = rpmb
         self.rpmb_proc = None
         self.rpmb_sock_dir = None
+        self.msg_sock_conn = None
+        self.msg_sock_dir = None
         self.debug_on_error = debug_on_error
         self.dump_stdout_on_error = False
 
@@ -390,15 +392,67 @@ c
             raise RunnerError("dts_to_dtb failed with %d" % dts_to_dtb_ret)
         return ["-dtb", dtb.name]
 
-    def semihosting_run(self, args):
-        """Runs QEMU assuming it will quit with semihosting"""
-        args += [
-            "-semihosting-config",
-            "arg=boottest " + ",".join(self.boot_tests)
-        ]
+    def msg_channel_up(self):
+        """Create message channel between host and QEMU guest
 
-        # Prepend the serial port so that it is the *first* port and avoid
-        # conflicting with rpmb0.
+        Virtual serial console port 'testrunner0' is introduced as socket
+        communication channel for QEMU guest and current process. Testrunner
+        enumerates this port, reads test case which to be executed from
+        testrunner0 port, sends output log message and test result to
+        testrunner0 port.
+        """
+
+        self.msg_sock_dir = tempfile.mkdtemp()
+        msg_sock_file = "%s/msg" % self.msg_sock_dir
+        self.msg_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.msg_sock.bind(msg_sock_file)
+        return ["-device",
+                "virtserialport,chardev=testrunner0,name=testrunner0",
+                "-chardev", "socket,id=testrunner0,path=%s" % msg_sock_file]
+
+    def msg_channel_down(self):
+        if self.msg_sock_conn:
+            self.msg_sock_conn.close()
+            self.msg_sock_conn = None
+        if self.msg_sock_dir:
+            shutil.rmtree(self.msg_sock_dir)
+            self.msg_sock_dir = None
+
+    def msg_channel_wait_for_connection(self):
+        # Listen on message socket, wait for testrunner to connect
+        self.msg_sock.listen(1)
+
+        # Accept testrunner's connection request
+        self.msg_sock_conn, _ = self.msg_sock.accept()
+
+    def msg_channel_send_msg(self, msg):
+        """Send message to testrunner via testrunner0 port
+
+        Testrunner tries to connect port while message with following format
+        "boottest your.port.here". Currently, we utilize this format to execute
+        cases in boot test.
+        If message does not comply above format, testrunner starts to launch
+        secondary OS.
+
+        """
+        if self.msg_sock_conn:
+            self.msg_sock_conn.send(msg)
+        else:
+            sys.stderr.write("Connection has not been established yet!")
+
+    def msg_channel_recv(self):
+        return self.msg_sock_conn.recv(64)
+
+    def msg_channel_close(self):
+        if self.msg_sock_conn:
+            self.msg_sock_conn.close()
+
+    def boottest_run(self, args, timeout=(60 * 2)):
+        """Run boot test cases"""
+
+        has_error = False
+        result = 2
+
         if self.interactive:
             args = ["-serial", "mon:stdio"] + args
         elif self.verbose:
@@ -408,12 +462,58 @@ c
             # Silence debugging output
             args = ["-serial", "null", "-monitor", "none"] + args
 
+        # Create command channel which used to quit QEMU after case execution
+        command_dir, command_args = gen_command_dir()
+        args += command_args
         cmd = [self.config.qemu] + args
-        # Test output is sent via semihosting, so don't disconnect stdout
-        return subprocess.call(
-            cmd,
-            cwd=self.config.atf,
-            stdin=self.stdin)
+
+        qemu_proc = subprocess.Popen(cmd, cwd=self.config.atf)
+
+        self.msg_channel_wait_for_connection()
+
+        def kill_testrunner():
+            self.msg_channel_down()
+            unclean_exit = qemu_exit(command_dir, qemu_proc,
+                                     has_error=True,
+                                     debug_on_error=self.debug_on_error)
+            raise Timeout("Wait for boottest to complete", timeout)
+
+        kill_timer = threading.Timer(timeout, kill_testrunner)
+        kill_timer.start()
+
+        testcase = "boottest " + "".join(self.boot_tests)
+        try:
+            self.msg_channel_send_msg(testcase)
+
+            while True:
+                ret = self.msg_channel_recv()
+
+                # Please align message structure definition in testrunner.
+                if ord(ret[0]) == 0:
+                    size = ord(ret[1])
+                    sys.stdout.write(ret[2 : 2 + size])
+                elif ord(ret[0]) == 1:
+                    result = ord(ret[1])
+                    break
+                else:
+                    # Unexpected type, return test result:TEST_FAILED
+                    has_error = True
+                    retsult = 1
+                    break
+        except:
+            has_error = True
+            raise
+        finally:
+            kill_timer.cancel()
+            self.msg_channel_down()
+            unclean_exit = qemu_exit(command_dir, qemu_proc,
+                                     has_error=has_error,
+                                     debug_on_error=self.debug_on_error)
+
+        if unclean_exit:
+            raise RunnerGenericError("QEMU did not exit cleanly")
+
+        return result
 
     def adb_bin(self):
         """Returns location of adb"""
@@ -552,8 +652,9 @@ c
                 raise ConfigError("Cannot run Android tests and boot"
                                   " tests from same runner")
 
-        # Since boot_tests exit the machine with semihosting, it is not
-        # compatible with interactive mode.
+        # Since boot test utilizes virtio serial console port for communication
+        # between QEMU guest and current process, it is not compatible with
+        # interactive mode.
         if self.boot_tests:
             if self.interactive:
                 raise ConfigError("Cannot run boot tests interactively")
@@ -648,10 +749,11 @@ c
             if self.debug:
                 args += ["-s", "-S"]
 
-            # This codepath should go away when test_runner is changed to
-            # not use semihosting exit to report
+            # Create socket for communication channel
+            args += self.msg_channel_up()
+
             if self.boot_tests:
-                return [self.semihosting_run(args)]
+                return [self.boottest_run(args)]
 
             # Logging and terminal monitor
             # Prepend so that it is the *first* serial port and avoid
@@ -677,10 +779,15 @@ c
                 stdout=self.stdout,
                 stderr=self.stderr)
 
+            self.msg_channel_wait_for_connection()
+
             if self.debug:
                 print "Run gdb and \"target remote :1234\" to debug"
 
             try:
+                # Send request to boot secondary OS
+                self.msg_channel_send_msg("Boot Secondary OS")
+
                 # Bring ADB up talking to the command port
                 self.adb_up(ports[1])
 
@@ -718,6 +825,8 @@ c
                         fcntl.fcntl(0, fcntl.F_GETFL) & ~os.O_NONBLOCK)
 
             self.rpmb_down()
+
+            self.msg_channel_down()
 
             if self.adb_transport:
                 # Disconnect ADB and wait for our port to be released by qemu
