@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 """Run Trusty under QEMU in different configurations"""
 import argparse
+import errno
 import fcntl
 import json
 import os
 import re
+import select
 import socket
 import subprocess
 import shutil
@@ -198,8 +200,20 @@ def qemu_exit(command_dir, qemu_proc, has_error, debug_on_error):
                     unclean_exit = True
             qemu_proc.wait()
 
+        # Onerror callback function to handle errors when we try to remove
+        # command pipe directory, since we sleep one second if QEMU doesn't
+        # die immediately, command pipe directory might has been removed
+        # already during sleep period.
+        def handleError(func, path, exc_info):
+            if not os.access(path, os.F_OK):
+                # Command pipe directory already removed, this case is
+                # expected, pass this case.
+                pass
+            else:
+                raise RunnerGenericError("Failed to clean up command pipe.")
+
         # Clean up our command pipe
-        shutil.rmtree(command_dir)
+        shutil.rmtree(command_dir, onerror=handleError)
 
     else:
         # This was an interactive run or a boot test
@@ -488,20 +502,39 @@ c
             while True:
                 ret = self.msg_channel_recv()
 
+                # If connection is disconnected accidently by peer, for
+                # instance child QEMU process crashed, a message with length
+                # 0 would be received. We should drop this message, and
+                # indicate test framework that something abnormal happened.
+                if not len(ret):
+                    has_error = True
+                    break
+
+                # Print message to STDOUT. Since we might meet EAGAIN IOError
+                # when writting to STDOUT, use try except loop to catch EAGAIN
+                # and waiting STDOUT to be available, then try to write again.
+                def print_msg(msg):
+                    while True:
+                        try:
+                            sys.stdout.write(msg)
+                            break
+                        except IOError as e:
+                            if e.errno != errno.EAGAIN:
+                                RunnerGenericError("Failed to print message")
+                            select.select([], [sys.stdout], [])
+
                 # Please align message structure definition in testrunner.
                 if ord(ret[0]) == 0:
-                    size = ord(ret[1])
-                    sys.stdout.write(ret[2 : 2 + size])
+                    print_msg(ret[2 : 2 + ord(ret[1])])
                 elif ord(ret[0]) == 1:
                     result = ord(ret[1])
                     break
                 else:
                     # Unexpected type, return test result:TEST_FAILED
                     has_error = True
-                    retsult = 1
+                    result = 1
                     break
         except:
-            has_error = True
             raise
         finally:
             kill_timer.cancel()
