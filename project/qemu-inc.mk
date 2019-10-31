@@ -81,13 +81,14 @@ $(QEMU_PY): $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/qemu.py
 # Save variables to a json file to export paths known to the build system to
 # the test system
 $(QEMU_CONFIG): QEMU_BIN := $(QEMU_BIN)
+$(QEMU_CONFIG): EXTRA_QEMU_FLAGS := ["-machine", "gic-version=$(GIC_VERSION)"]
 $(QEMU_CONFIG): ATF_OUT_DIR := $(ATF_OUT_DIR)
 $(QEMU_CONFIG): LINUX_BUILD_DIR := $(LINUX_BUILD_DIR)
 $(QEMU_CONFIG): ANDROID_PREBUILT := $(abspath trusty/prebuilts/aosp/android)
 $(QEMU_CONFIG): RPMB_DEV := $(RPMB_DEV)
 $(QEMU_CONFIG): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_DATA
 	@echo generating $@
-	@echo '{"linux": "$(LINUX_BUILD_DIR)", "atf": "$(ATF_OUT_DIR)", "qemu": "$(QEMU_BIN)", "android": "$(ANDROID_PREBUILT)", "rpmbd": "$(RPMB_DEV)"}' > $@
+	@echo '{"linux": "$(LINUX_BUILD_DIR)", "atf": "$(ATF_OUT_DIR)", "qemu": "$(QEMU_BIN)", "extra_qemu_flags": $(EXTRA_QEMU_FLAGS), "android": "$(ANDROID_PREBUILT)", "rpmbd": "$(RPMB_DEV)"}' > $@
 
 EXTRA_BUILDDEPS += $(QEMU_CONFIG)
 
