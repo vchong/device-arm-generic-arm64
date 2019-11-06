@@ -24,3 +24,9 @@ include trusty/user/base/usertests-inc.mk
 GLOBAL_COMPILEFLAGS += -ftrivial-auto-var-init=pattern
 
 TEST_BUILD := true
+
+#
+# Modules to be compiled into lk.bin
+#
+MODULES += \
+	trusty/kernel/services/smc \
