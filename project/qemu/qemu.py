@@ -493,7 +493,8 @@ c
             raise Timeout("Wait for boottest to complete", timeout)
 
         kill_timer = threading.Timer(timeout, kill_testrunner)
-        kill_timer.start()
+        if not self.debug:
+            kill_timer.start()
 
         testcase = "boottest " + "".join(self.boot_tests)
         try:
@@ -589,7 +590,8 @@ c
             print "Timed out (%d s)" % timeout
 
         kill_timer = threading.Timer(timeout, kill_adb)
-        kill_timer.start()
+        if not self.debug:
+            kill_timer.start()
         # Add finally here so that the python interpreter will exit quickly
         # in the event of an exception rather than waiting for the timer
         try:
