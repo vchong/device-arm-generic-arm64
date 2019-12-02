@@ -174,7 +174,9 @@ def qemu_exit(command_dir, qemu_proc, has_error, debug_on_error):
                     if debug_on_error:
                         os.write(com_pipe, "gdbserver\n")
                         try:
-                            raw_input("Connect gdb, press enter when done ")
+                            print "Connect gdb, press enter when done "
+                            select.select([sys.stdin], [], [])
+                            raw_input("\n")
                         except:
                             pass
                 os.write(com_pipe, "quit\n")
