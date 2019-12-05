@@ -607,7 +607,7 @@ c
         """Returns location of adb"""
         return "%s/out/host/linux-x86/bin/adb" % self.config.android
 
-    def adb(self, args, timeout=60, force_output=False):
+    def adb(self, args, timeout=60, on_timeout=None, force_output=False):
         """Runs an adb command
 
         If self.adb_transport is set, specializes the command to that
@@ -640,11 +640,17 @@ c
             # unlikely, to get a spurious timeout message and kill
             # if .wait() returns, this function is triggered, and then
             # .cancel() runs
-            adb_proc.kill()
             print "Timed out (%d s)" % timeout
+            if on_timeout:
+                on_timeout()
 
-        kill_timer = threading.Timer(timeout, kill_adb)
+            try:
+                adb_proc.kill()
+            except OSError:
+                pass
+
         if not self.debug:
+            kill_timer = threading.Timer(timeout, kill_adb)
             kill_timer.start()
         # Add finally here so that the python interpreter will exit quickly
         # in the event of an exception rather than waiting for the timer
@@ -652,8 +658,9 @@ c
             exit_code = adb_proc.wait()
             return exit_code
         finally:
-            kill_timer.cancel()
-
+            if not self.debug:
+                kill_timer.cancel()
+                kill_timer.join()
 
     def check_adb(self, args):
         """As .adb(), but throws an exception if the command fails"""
@@ -881,10 +888,15 @@ c
                 # Bring ADB up talking to the command port
                 self.adb_up(ports[1])
 
+                def on_adb_timeout():
+                    qemu_handle_error(command_pipe=command_pipe,
+                                      debug_on_error=self.debug_on_error)
+
                 # Run android tests
                 for android_test in self.android_tests:
                     test_result = self.adb(["shell", android_test],
                                            timeout=(60 * 10),
+                                           on_timeout=on_adb_timeout,
                                            force_output=True)
                     test_results.append(test_result)
                     if test_result:
