@@ -143,52 +143,113 @@ def forward_ports(ports):
     ]
 
 
-def gen_command_dir():
-    """Produces pipes for talking to QEMU and args to enable them"""
-    command_dir = tempfile.mkdtemp()
-    os.mkfifo("%s/com.in" % command_dir)
-    os.mkfifo("%s/com.out" % command_dir)
-    command_args = [
-        "-chardev",
-        "pipe,id=command0,path=%s/com" % command_dir, "-mon",
-        "chardev=command0"
-    ]
-    return command_dir, command_args
+class QEMUCommandPipe(object):
+    """Communicate with QEMU."""
+
+    def __init__(self):
+        """Produces pipes for talking to QEMU and args to enable them."""
+        self.command_dir = tempfile.mkdtemp()
+        os.mkfifo("%s/com.in" % self.command_dir)
+        os.mkfifo("%s/com.out" % self.command_dir)
+        self.command_args = [
+            "-chardev",
+            "pipe,id=command0,path=%s/com" % self.command_dir, "-mon",
+            "chardev=command0,mode=control"
+        ]
+        self.com_pipe_in = None
+        self.com_pipe_out = None
+
+    def open(self):
+        self.com_pipe_in = open("%s/com.in" % self.command_dir, "w", 0)
+        self.com_pipe_out = open("%s/com.out" % self.command_dir, "r", 0)
+        self.qmp_command({"execute": "qmp_capabilities"})
+
+    def close(self):
+        """Close and clean up command pipes."""
+
+        if self.com_pipe_in:
+            self.com_pipe_in.close()
+        if self.com_pipe_out:
+            self.com_pipe_out.close()
+
+        # Onerror callback function to handle errors when we try to remove
+        # command pipe directory, since we sleep one second if QEMU doesn't
+        # die immediately, command pipe directory might has been removed
+        # already during sleep period.
+        def cb_handle_error(func, path, exc_info):
+            if not os.access(path, os.F_OK):
+                # Command pipe directory already removed, this case is
+                # expected, pass this case.
+                pass
+            else:
+                raise RunnerGenericError("Failed to clean up command pipe.")
+
+        # Clean up our command pipe
+        shutil.rmtree(self.command_dir, onerror=cb_handle_error)
+
+    def qmp_command(self, qmp_command):
+        """Send a qmp command and return result."""
+
+        json.dump(qmp_command, self.com_pipe_in)
+        for line in iter(self.com_pipe_out.readline, ""):
+            res = json.loads(line)
+
+            if res.has_key("error"):
+                sys.stderr.write("Command {} failed: {}\n".format(
+                    qmp_command, res["error"]))
+                return res
+
+            if res.has_key("return"):
+                return res
+
+            if not res.has_key("QMP") and not res.has_key("event"):
+                # Print unexpected extra lines
+                sys.stderr.write("ignored:" + line)
+
+    def qmp_execute(self, execute, arguments=None):
+        """Send a qmp execute command and return result."""
+        cmp_command = {"execute": execute}
+        if arguments:
+            cmp_command["arguments"] = arguments
+        return self.qmp_command(cmp_command)
+
+    def monitor_command(self, monitor_command):
+        """Send a monitor command and write result to stderr."""
+
+        res = self.qmp_execute("human-monitor-command",
+                               {"command-line": monitor_command})
+        if res.has_key("return"):
+            sys.stderr.write(res["return"])
 
 
-def qemu_exit(command_dir, qemu_proc, has_error, debug_on_error):
+def qemu_handle_error(command_pipe, debug_on_error):
+    """Dump registers and/or wait for debugger."""
+
+    sys.stdout.flush()
+
+    sys.stderr.write("QEMU register dump:\n")
+    command_pipe.monitor_command("info registers -a")
+    sys.stderr.write("\n")
+
+    if debug_on_error:
+        command_pipe.monitor_command("gdbserver")
+        print "Connect gdb, press enter when done "
+        select.select([sys.stdin], [], [])
+        raw_input("\n")
+
+
+def qemu_exit(command_pipe, qemu_proc, has_error, debug_on_error):
     """Ensures QEMU is terminated"""
     unclean_exit = False
 
-    if command_dir:
+    if command_pipe:
         # Ask QEMU to quit
         if qemu_proc and (qemu_proc.poll() is None):
-            # Open O_NONBLOCK to deal with a potential race between
-            # qemu_proc.poll() and the open call. The poll() is purely
-            # advisory now.
             try:
-                com_pipe = os.open("%s/com.in" % command_dir,
-                                   os.O_NONBLOCK | os.O_WRONLY)
                 if has_error:
-                    os.write(com_pipe, "info registers -a\n")
-                    if debug_on_error:
-                        os.write(com_pipe, "gdbserver\n")
-                        try:
-                            print "Connect gdb, press enter when done "
-                            select.select([sys.stdin], [], [])
-                            raw_input("\n")
-                        except:
-                            pass
-                os.write(com_pipe, "quit\n")
-                if has_error:
-                    sys.stdout.flush()
-                    sys.stderr.write("QEMU exit register dump:\n")
-                    with open("%s/com.out" % command_dir, "r") as com_pipe_out:
-                        for line in com_pipe_out:
-                            if not (line.startswith("QEMU") or
-                                    line.startswith("(qemu)")):
-                                sys.stderr.write(line)
-                os.close(com_pipe)
+                    qemu_handle_error(command_pipe=command_pipe,
+                                      debug_on_error=debug_on_error)
+                command_pipe.qmp_execute("quit")
             except OSError:
                 pass
 
@@ -202,20 +263,7 @@ def qemu_exit(command_dir, qemu_proc, has_error, debug_on_error):
                     unclean_exit = True
             qemu_proc.wait()
 
-        # Onerror callback function to handle errors when we try to remove
-        # command pipe directory, since we sleep one second if QEMU doesn't
-        # die immediately, command pipe directory might has been removed
-        # already during sleep period.
-        def handleError(func, path, exc_info):
-            if not os.access(path, os.F_OK):
-                # Command pipe directory already removed, this case is
-                # expected, pass this case.
-                pass
-            else:
-                raise RunnerGenericError("Failed to clean up command pipe.")
-
-        # Clean up our command pipe
-        shutil.rmtree(command_dir, onerror=handleError)
+        command_pipe.close()
 
     else:
         # This was an interactive run or a boot test
@@ -482,17 +530,18 @@ c
             args = ["-serial", "null", "-monitor", "none"] + args
 
         # Create command channel which used to quit QEMU after case execution
-        command_dir, command_args = gen_command_dir()
-        args += command_args
+        command_pipe = QEMUCommandPipe()
+        args += command_pipe.command_args
         cmd = [self.config.qemu] + args
 
         qemu_proc = subprocess.Popen(cmd, cwd=self.config.atf)
 
+        command_pipe.open()
         self.msg_channel_wait_for_connection()
 
         def kill_testrunner():
             self.msg_channel_down()
-            unclean_exit = qemu_exit(command_dir, qemu_proc,
+            unclean_exit = qemu_exit(command_pipe, qemu_proc,
                                      has_error=True,
                                      debug_on_error=self.debug_on_error)
             raise Timeout("Wait for boottest to complete", timeout)
@@ -545,7 +594,7 @@ c
         finally:
             kill_timer.cancel()
             self.msg_channel_down()
-            unclean_exit = qemu_exit(command_dir, qemu_proc,
+            unclean_exit = qemu_exit(command_pipe, qemu_proc,
                                      has_error=has_error,
                                      debug_on_error=self.debug_on_error)
 
@@ -767,7 +816,7 @@ c
         args = self.universal_args()
 
         test_results = []
-        command_dir = None
+        command_pipe = None
 
         qemu_proc = None
         has_error = False
@@ -803,8 +852,8 @@ c
             # If we're noninteractive (e.g. testing) we need a command channel
             # to tell the guest to exit
             if not self.interactive:
-                command_dir, command_args = gen_command_dir()
-                args += command_args
+                command_pipe = QEMUCommandPipe()
+                args += command_pipe.command_args
 
             # Reserve ADB ports
             ports = alloc_ports()
@@ -819,6 +868,7 @@ c
                 stdout=self.stdout,
                 stderr=self.stderr)
 
+            command_pipe.open()
             self.msg_channel_wait_for_connection()
 
             if self.debug:
@@ -857,7 +907,7 @@ c
             if has_error:
                 self.error_dump_output()
 
-            unclean_exit = qemu_exit(command_dir, qemu_proc,
+            unclean_exit = qemu_exit(command_pipe, qemu_proc,
                                      has_error=has_error,
                                      debug_on_error=self.debug_on_error)
 
