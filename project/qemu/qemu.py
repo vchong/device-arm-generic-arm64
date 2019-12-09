@@ -422,6 +422,10 @@ c
         msg_sock_file = "%s/msg" % self.msg_sock_dir
         self.msg_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.msg_sock.bind(msg_sock_file)
+
+        # Listen on message socket
+        self.msg_sock.listen(1)
+
         return ["-device",
                 "virtserialport,chardev=testrunner0,name=testrunner0",
                 "-chardev", "socket,id=testrunner0,path=%s" % msg_sock_file]
@@ -435,8 +439,7 @@ c
             self.msg_sock_dir = None
 
     def msg_channel_wait_for_connection(self):
-        # Listen on message socket, wait for testrunner to connect
-        self.msg_sock.listen(1)
+        """wait for testrunner to connect."""
 
         # Accept testrunner's connection request
         self.msg_sock_conn, _ = self.msg_sock.accept()
