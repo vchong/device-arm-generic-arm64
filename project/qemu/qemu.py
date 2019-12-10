@@ -714,7 +714,7 @@ c
         self.check_adb(["disconnect", "localhost:%d" % port])
 
         # Wait until QEMU's forward has expired
-        CONNECT_MAX_TRIES = 15
+        CONNECT_MAX_TRIES = 120
         connect_tries = 0
         while True:
             try:
