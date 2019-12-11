@@ -875,7 +875,8 @@ c
                 stdout=self.stdout,
                 stderr=self.stderr)
 
-            command_pipe.open()
+            if command_pipe:
+                command_pipe.open()
             self.msg_channel_wait_for_connection()
 
             if self.debug:
