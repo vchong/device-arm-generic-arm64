@@ -190,21 +190,24 @@ class QEMUCommandPipe(object):
     def qmp_command(self, qmp_command):
         """Send a qmp command and return result."""
 
-        json.dump(qmp_command, self.com_pipe_in)
-        for line in iter(self.com_pipe_out.readline, ""):
-            res = json.loads(line)
+        try:
+            json.dump(qmp_command, self.com_pipe_in)
+            for line in iter(self.com_pipe_out.readline, ""):
+                res = json.loads(line)
 
-            if res.has_key("error"):
-                sys.stderr.write("Command {} failed: {}\n".format(
-                    qmp_command, res["error"]))
-                return res
+                if res.has_key("error"):
+                    sys.stderr.write("Command {} failed: {}\n".format(
+                        qmp_command, res["error"]))
+                    return res
 
-            if res.has_key("return"):
-                return res
+                if res.has_key("return"):
+                    return res
 
-            if not res.has_key("QMP") and not res.has_key("event"):
-                # Print unexpected extra lines
-                sys.stderr.write("ignored:" + line)
+                if not res.has_key("QMP") and not res.has_key("event"):
+                    # Print unexpected extra lines
+                    sys.stderr.write("ignored:" + line)
+        except IOError as e:
+            print "qmp_command error ignored", e
 
     def qmp_execute(self, execute, arguments=None):
         """Send a qmp execute command and return result."""
@@ -218,7 +221,7 @@ class QEMUCommandPipe(object):
 
         res = self.qmp_execute("human-monitor-command",
                                {"command-line": monitor_command})
-        if res.has_key("return"):
+        if res and res.has_key("return"):
             sys.stderr.write(res["return"])
 
 
