@@ -5,6 +5,7 @@ import errno
 import fcntl
 import json
 import os
+import qemu_options
 import re
 import select
 import socket
@@ -75,7 +76,8 @@ class Config(object):
         android:          Path to a built Android tree or prebuilt.
         linux:            Path to a built Linux kernel tree or prebuilt.
         atf:              Path to the ATF build to use.
-        qemu:             Path to the emulator to use
+        qemu:             Path to the emulator to use.
+        arch:             Architecture definition.
         rpmbd:            Path to the rpmb daemon to use.
         extra_qemu_flags: Extra flags to pass to QEMU.
     Setting android or linux to None will result in a QEMU which starts
@@ -101,6 +103,7 @@ class Config(object):
         self.atf = config_dict.get("atf")
         self.qemu = config_dict.get("qemu", "qemu-system-aarch64")
         self.rpmbd = config_dict.get("rpmbd")
+        self.arch = config_dict.get("arch")
         self.extra_qemu_flags = config_dict.get("extra_qemu_flags", [])
 
 
@@ -282,18 +285,6 @@ def qemu_exit(command_pipe, qemu_proc, has_error, debug_on_error):
 class Runner(object):
     """Executes tests in QEMU"""
 
-    MACHINE = "virt,secure=on,virtualization=on"
-
-    BASIC_ARGS = [
-        "-nographic", "-cpu", "cortex-a57", "-smp", "4", "-m", "1024", "-d",
-        "unimp", "-semihosting-config", "enable,target=native", "-no-acpi",
-        "-device", "virtio-serial",
-    ]
-
-    LINUX_ARGS = (
-        "earlyprintk console=ttyAMA0,38400 keep_bootcon "
-        "root=/dev/vda ro init=/init androidboot.hardware=qemu_trusty")
-
     def __init__(self,
                  config,
                  boot_tests=None,
@@ -322,6 +313,7 @@ class Runner(object):
         self.msg_sock_dir = None
         self.debug_on_error = debug_on_error
         self.dump_stdout_on_error = False
+        self.qemu_arch_options = None
 
         # Python 2.7 does not have subprocess.DEVNULL, emulate it
         devnull = open(os.devnull, "r+")
@@ -339,6 +331,13 @@ class Runner(object):
             self.stdin = None
         else:
             self.stdin = devnull
+
+        if self.config.arch == 'arm64' or self.config.arch == 'arm':
+            self.qemu_arch_options = qemu_options.QemuArm64Options(self.config)
+        elif self.config.arch == 'x86_64':
+            self.qemu_arch_options = qemu_options.QemuX86_64Options(self.config)
+        else:
+            raise ConfigError("Architecture unspecified or unsupported!")
 
         if self.boot_tests and self.debug:
             print """\
@@ -367,29 +366,10 @@ c
         self.temp_files.append(tmp.name)
         return tmp
 
-    def drive_args(self, image, index):
-        """Generates arguments for mapping a drive"""
-        index_letter = chr(ord('a') + index)
-        image_dir = "%s/out/target/product/trusty" % self.config.android
-        return [
-            "-drive",
-            "file=%s/%s.img,index=%d,if=none,id=hd%s,format=raw,snapshot=on" %
-            (image_dir, image, index, index_letter), "-device",
-            "virtio-blk-device,drive=hd%s" % index_letter
-        ]
-
-    def android_drives_args(self):
-        """Generates arguments for mapping all default drives"""
-        args = []
-        # This is order sensitive due to using e.g. root=/dev/vda
-        args += self.drive_args("userdata", 2)
-        args += self.drive_args("vendor", 1)
-        args += self.drive_args("system", 0)
-        return args
-
     def rpmb_up(self):
         """Brings up the rpmb daemon, returning QEMU args to connect"""
-        rpmb_data = "%s/RPMB_DATA" % self.config.atf
+        rpmb_data = self.qemu_arch_options.rpmb_data_path()
+
         self.rpmb_sock_dir = tempfile.mkdtemp()
         rpmb_sock = "%s/rpmb" % self.rpmb_sock_dir
         rpmb_proc = subprocess.Popen([self.config.rpmbd,
@@ -411,8 +391,7 @@ c
                     raise exn
                 time.sleep(1)
 
-        return ["-device", "virtserialport,chardev=rpmb0,name=rpmb0",
-                "-chardev", "socket,id=rpmb0,path=%s" % rpmb_sock]
+        return self.qemu_arch_options.rpmb_options(rpmb_sock)
 
     def rpmb_down(self):
         """Kills the running rpmb daemon, cleaning up its socket directory"""
@@ -422,42 +401,6 @@ c
         if self.rpmb_sock_dir:
             shutil.rmtree(self.rpmb_sock_dir)
             self.rpmb_sock_dir = None
-
-    def gen_dtb(self, args):
-        """Computes a trusty device tree, returning a file for it"""
-        with tempfile.NamedTemporaryFile() as dtb_gen:
-            dump_dtb_cmd = [
-                self.config.qemu, "-machine",
-                "%s,dumpdtb=%s" % (self.MACHINE, dtb_gen.name)
-            ] + [arg for arg in args if arg != "-S"]
-            returncode = subprocess.call(dump_dtb_cmd)
-            if returncode != 0:
-                raise RunnerGenericError("dumping dtb failed with %d" %
-                                         returncode)
-            dtc = "%s/scripts/dtc/dtc" % self.config.linux
-            dtb_to_dts_cmd = [dtc, "-q", "-O", "dts", dtb_gen.name]
-            dtb_to_dts = subprocess.Popen(dtb_to_dts_cmd,
-                                          stdout=subprocess.PIPE)
-            dts = dtb_to_dts.communicate()[0]
-            if dtb_to_dts.returncode != 0:
-                raise RunnerGenericError("dtb_to_dts failed with %d" %
-                                         dtb_to_dts.returncode)
-
-        firmware = "%s/firmware.android.dts" % self.config.atf
-        with open(firmware, "r") as firmware_file:
-            dts += firmware_file.read()
-
-        # Subprocess closes dtb, so we can't allow it to autodelete
-        dtb = self.get_qemu_arg_temp_file()
-        dts_to_dtb_cmd = [dtc, "-q", "-O", "dtb"]
-        dts_to_dtb = subprocess.Popen(dts_to_dtb_cmd,
-                                      stdin=subprocess.PIPE,
-                                      stdout=dtb)
-        dts_to_dtb.communicate(dts)
-        dts_to_dtb_ret = dts_to_dtb.wait()
-        if dts_to_dtb_ret:
-            raise RunnerError("dts_to_dtb failed with %d" % dts_to_dtb_ret)
-        return ["-dtb", dtb.name]
 
     def msg_channel_up(self):
         """Create message channel between host and QEMU guest
@@ -709,7 +652,7 @@ c
         # actually be populated into userdata.img when make dist is used.
         # To work around this, we manually update /data once the device is
         # booted by pushing it the files that would have been there.
-        userdata = "%s/out/target/product/trusty/data" % self.config.android
+        userdata = self.qemu_arch_options.android_trusty_user_data()
         self.check_adb(["push", userdata, "/"])
 
     def adb_down(self, port):
@@ -764,19 +707,14 @@ c
 
     def universal_args(self):
         """Generates arguments used in all qemu invocations"""
-        args = list(self.BASIC_ARGS)
-        # Set ATF to be the bios
-        args += ["-bios", "%s/bl1.bin" % self.config.atf]
+        args = self.qemu_arch_options.basic_options()
+        args += self.qemu_arch_options.bios_options()
 
         if self.config.linux:
-            args += [
-                "-kernel",
-                "%s/arch/arm64/boot/Image" % self.config.linux
-            ]
-            args += ["-append", self.LINUX_ARGS]
+            args += self.qemu_arch_options.linux_options()
 
         if self.config.android:
-            args += self.android_drives_args()
+            args += self.qemu_arch_options.android_drives_args()
 
         # Append configured extra flags
         args += self.config.extra_qemu_flags
@@ -840,10 +778,12 @@ c
                 args += self.rpmb_up()
 
             if self.config.linux:
-                args += self.gen_dtb(args)
+                args += self.qemu_arch_options.gen_dtb(
+                    args,
+                    self.get_qemu_arg_temp_file())
 
             # Prepend the machine since we don't need to edit it as in gen_dtb
-            args = ["-machine", self.MACHINE] + args
+            args = self.qemu_arch_options.machine_options() + args
 
             if self.debug:
                 args += ["-s", "-S"]
@@ -956,6 +896,7 @@ def main():
     argument_parser.add_argument("--linux")
     argument_parser.add_argument("--atf")
     argument_parser.add_argument("--qemu")
+    argument_parser.add_argument("--arch")
     argument_parser.add_argument("--disable-rpmb", action="store_true")
     argument_parser.add_argument("extra_qemu_flags", nargs="*")
     args = argument_parser.parse_args()
@@ -969,6 +910,8 @@ def main():
         config.atf = args.atf
     if args.qemu:
         config.qemu = args.qemu
+    if args.arch:
+        config.arch = args.arch
     if args.extra_qemu_flags:
         config.extra_qemu_flags += args.extra_qemu_flags
 

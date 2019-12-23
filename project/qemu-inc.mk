@@ -45,6 +45,7 @@ RUN_QEMU_SCRIPT := $(BUILDDIR)/run-qemu
 RUN_SCRIPT := $(BUILDDIR)/run
 QEMU_CONFIG := $(BUILDDIR)/config.json
 QEMU_PY := $(BUILDDIR)/qemu.py
+QEMU_OPTIONS_PY := $(BUILDDIR)/qemu_options.py
 
 $(ATF_OUT_DIR):
 	mkdir -p $@
@@ -73,8 +74,21 @@ $(ATF_OUT_DIR)/RPMB_DATA: $(RPMB_DEV)
 	@echo Initialize rpmb device
 	$< --dev $(ATF_OUT_DIR)/RPMB_DATA --init --key "ea df 64 44 ea 65 5d 1c 87 27 d4 20 71 0d 53 42 dd 73 a3 38 63 e1 d7 94 c3 72 a6 ea e0 64 64 e6" --size 2048
 
+QEMU_SCRIPTS := \
+	$(QEMU_PY) \
+	$(QEMU_OPTIONS_PY)
+
+$(QEMU_SCRIPTS): .PHONY
+EXTRA_BUILDDEPS += $(QEMU_SCRIPTS)
+
 # Copied so that the resulting build tree contains all files needed to run
 $(QEMU_PY): $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/qemu.py
+	@echo copying $@
+	@cp $< $@
+
+# Script used to generate qemu architecture options. Need to specify qemu
+# options file name since different projects use different python script
+$(QEMU_OPTIONS_PY): $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/qemu_arm64_options.py
 	@echo copying $@
 	@cp $< $@
 
@@ -88,7 +102,7 @@ $(QEMU_CONFIG): ANDROID_PREBUILT := $(abspath trusty/prebuilts/aosp/android)
 $(QEMU_CONFIG): RPMB_DEV := $(RPMB_DEV)
 $(QEMU_CONFIG): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_DATA
 	@echo generating $@
-	@echo '{"linux": "$(LINUX_BUILD_DIR)", "atf": "$(ATF_OUT_DIR)", "qemu": "$(QEMU_BIN)", "extra_qemu_flags": $(EXTRA_QEMU_FLAGS), "android": "$(ANDROID_PREBUILT)", "rpmbd": "$(RPMB_DEV)"}' > $@
+	@echo '{"linux": "$(LINUX_BUILD_DIR)", "atf": "$(ATF_OUT_DIR)", "qemu": "$(QEMU_BIN)", "extra_qemu_flags": $(EXTRA_QEMU_FLAGS), "android": "$(ANDROID_PREBUILT)", "rpmbd": "$(RPMB_DEV)", "arch": "$(ARCH)"}' > $@
 
 EXTRA_BUILDDEPS += $(QEMU_CONFIG)
 
@@ -108,7 +122,7 @@ EXTRA_BUILDDEPS += $(RUN_QEMU_SCRIPT)
 
 # Create a wrapper around qemu.py which defaults the config
 # $(RUN_SCRIPT) will be the device-generic interface called by run-tests
-$(RUN_SCRIPT): $(QEMU_PY) $(QEMU_CONFIG)
+$(RUN_SCRIPT): $(QEMU_SCRIPTS) $(QEMU_CONFIG)
 	@echo generating $@
 	@echo "#!/bin/sh" >$@
 	@echo 'python $(abspath $(QEMU_PY)) -c $(abspath $(QEMU_CONFIG)) "$$@"' >>$@
