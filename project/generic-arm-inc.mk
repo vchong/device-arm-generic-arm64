@@ -85,6 +85,7 @@ MODULES += \
 	trusty/kernel/lib/sm \
 	trusty/kernel/lib/trusty \
 	trusty/kernel/lib/memlog \
+	trusty/kernel/services/smc \
 
 #
 # Set user space arch
