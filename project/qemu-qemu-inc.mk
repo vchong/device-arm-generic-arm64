@@ -38,7 +38,11 @@ $(QEMU_MAKEFILE):
 	mkdir -p $(QEMU_BUILD_BASE)
 	#--with-git=true sets the "git" program to /bin/true - it essentially disables git
 	#--disable-git-update may look like what we want, but it requests manual intervention, not disables git
-	cd $(QEMU_BUILD_BASE) && $(abspath $(QEMU_ROOT)/configure) --target-list=aarch64-softmmu,arm-softmmu --with-git=true
+	# TODO(b/148904400): Our prebuilt Clang can't build QEMU yet, and there is no
+	# prebuilts GCC, i.e. currently we can only build QEMU with host toolchain. On
+	# some hosts compiler will complain about stringop truncation.
+	cd $(QEMU_BUILD_BASE) && $(abspath $(QEMU_ROOT)/configure) \
+		--target-list=aarch64-softmmu,arm-softmmu --with-git=true --disable-werror
 
 $(QEMU_BIN): QEMU_BUILD_BASE:=$(QEMU_BUILD_BASE)
 $(QEMU_BIN): $(QEMU_MAKEFILE) .PHONY
