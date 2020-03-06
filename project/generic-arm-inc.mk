@@ -123,4 +123,6 @@ WITH_FAKE_HWKEY ?= true
 # This project requires trusty IPC
 WITH_TRUSTY_IPC := true
 
+SYMTAB_ENABLED ?= true
+
 EXTRA_BUILDRULES += trusty/kernel/app/trusty/user-tasks.mk
