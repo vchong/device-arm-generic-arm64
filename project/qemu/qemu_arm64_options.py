@@ -99,7 +99,8 @@ class QemuArm64Options(object):
 
     def linux_options(self):
         return [
-            "-kernel", "%s/arch/arm64/boot/Image" % self.config.linux,
+            "-kernel", "%s/arch/%s/boot/Image" % (self.config.linux,
+                                                  self.config.linux_arch),
             "-append", self.LINUX_ARGS
         ]
 

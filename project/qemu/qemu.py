@@ -29,6 +29,7 @@ class Config(object):
     Attributes:
         android:          Path to a built Android tree or prebuilt.
         linux:            Path to a built Linux kernel tree or prebuilt.
+        linux_arch:       Architecture of Linux kernel.
         atf:              Path to the ATF build to use.
         qemu:             Path to the emulator to use.
         arch:             Architecture definition.
@@ -54,6 +55,7 @@ class Config(object):
 
         self.android = config_dict.get("android")
         self.linux = config_dict.get("linux")
+        self.linux_arch = config_dict.get("linux_arch")
         self.atf = config_dict.get("atf")
         self.qemu = config_dict.get("qemu", "qemu-system-aarch64")
         self.rpmbd = config_dict.get("rpmbd")

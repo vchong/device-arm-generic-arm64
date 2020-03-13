@@ -35,7 +35,7 @@ QEMU_BUILD_BASE := $(abspath $(BUILDDIR)/qemu-build)
 QEMU_ARCH := aarch64
 include project/qemu-qemu-inc.mk
 
-LINUX_ARCH ?= $(ARCH)
+LINUX_ARCH ?= arm64
 include project/linux-inc.mk
 
 EXTRA_BUILDRULES += external/trusty/bootloader/test-runner/test-runner-inc.mk
@@ -109,7 +109,14 @@ $(QEMU_CONFIG): ANDROID_PREBUILT := $(abspath trusty/prebuilts/aosp/android)
 $(QEMU_CONFIG): RPMB_DEV := $(RPMB_DEV)
 $(QEMU_CONFIG): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_DATA
 	@echo generating $@
-	@echo '{"linux": "$(LINUX_BUILD_DIR)", "atf": "$(ATF_OUT_DIR)", "qemu": "$(QEMU_BIN)", "extra_qemu_flags": $(EXTRA_QEMU_FLAGS), "android": "$(ANDROID_PREBUILT)", "rpmbd": "$(RPMB_DEV)", "arch": "$(ARCH)"}' > $@
+	@echo '{ "linux": "$(LINUX_BUILD_DIR)",' > $@
+	@echo '  "linux_arch": "$(LINUX_ARCH)",' >> $@
+	@echo '  "atf": "$(ATF_OUT_DIR)", ' >> $@
+	@echo '  "qemu": "$(QEMU_BIN)", ' >> $@
+	@echo '  "extra_qemu_flags": $(EXTRA_QEMU_FLAGS), ' >> $@
+	@echo '  "android": "$(ANDROID_PREBUILT)", ' >> $@
+	@echo '  "rpmbd": "$(RPMB_DEV)", ' >> $@
+	@echo '  "arch": "$(ARCH)" }' >> $@
 
 EXTRA_BUILDDEPS += $(QEMU_CONFIG)
 
