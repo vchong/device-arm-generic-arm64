@@ -3,6 +3,9 @@
 import subprocess
 import tempfile
 
+from qemu_error import RunnerGenericError
+
+
 class QemuArm64Options(object):
 
     MACHINE = "virt,secure=on,virtualization=on"
@@ -62,7 +65,7 @@ class QemuArm64Options(object):
         dts_to_dtb.communicate(dts)
         dts_to_dtb_ret = dts_to_dtb.wait()
         if dts_to_dtb_ret:
-            raise RunnerError("dts_to_dtb failed with %d" % dts_to_dtb_ret)
+            raise RunnerGenericError("dts_to_dtb failed with %d" % dts_to_dtb_ret)
         return ["-dtb", dtb.name]
 
     def drive_args(self, image, index):

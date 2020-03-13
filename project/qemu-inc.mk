@@ -45,6 +45,7 @@ RUN_QEMU_SCRIPT := $(BUILDDIR)/run-qemu
 RUN_SCRIPT := $(BUILDDIR)/run
 QEMU_CONFIG := $(BUILDDIR)/config.json
 QEMU_PY := $(BUILDDIR)/qemu.py
+QEMU_ERROR_PY := $(BUILDDIR)/qemu_error.py
 QEMU_OPTIONS_PY := $(BUILDDIR)/qemu_options.py
 
 $(ATF_OUT_DIR):
@@ -76,6 +77,7 @@ $(ATF_OUT_DIR)/RPMB_DATA: $(RPMB_DEV)
 
 QEMU_SCRIPTS := \
 	$(QEMU_PY) \
+	$(QEMU_ERROR_PY) \
 	$(QEMU_OPTIONS_PY)
 
 $(QEMU_SCRIPTS): .PHONY
@@ -83,6 +85,11 @@ EXTRA_BUILDDEPS += $(QEMU_SCRIPTS)
 
 # Copied so that the resulting build tree contains all files needed to run
 $(QEMU_PY): $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/qemu.py
+	@echo copying $@
+	@cp $< $@
+
+# Copied so that the resulting build tree contains all files needed to run
+$(QEMU_ERROR_PY): $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/qemu_error.py
 	@echo copying $@
 	@cp $< $@
 
