@@ -249,11 +249,13 @@ class Runner(object):
                  verbose=False,
                  rpmb=True,
                  debug=False,
-                 debug_on_error=False):
+                 debug_on_error=False,
+                 timeout=None):
         """Initializes the runner with provided settings.
 
         See .run() for the meanings of these.
         """
+        DEFAULT_TIMEOUT = 60 * 10 # 10 Minutes
         self.config = config
         self.boot_tests = boot_tests if boot_tests else []
         self.android_tests = android_tests if android_tests else []
@@ -270,6 +272,7 @@ class Runner(object):
         self.debug_on_error = debug_on_error
         self.dump_stdout_on_error = False
         self.qemu_arch_options = None
+        self.test_timeout = DEFAULT_TIMEOUT if timeout is None else timeout
 
         # Python 2.7 does not have subprocess.DEVNULL, emulate it
         devnull = open(os.devnull, "r+")
@@ -748,7 +751,7 @@ c
             args += self.msg_channel_up()
 
             if self.boot_tests:
-                return [self.boottest_run(args)]
+                return [self.boottest_run(args, timeout=self.test_timeout)]
 
             # Logging and terminal monitor
             # Prepend so that it is the *first* serial port and avoid
@@ -795,7 +798,7 @@ c
                 # Run android tests
                 for android_test in self.android_tests:
                     test_result = self.adb(["shell", android_test],
-                                           timeout=(60 * 10),
+                                           timeout=self.test_timeout,
                                            on_timeout=on_adb_timeout,
                                            force_output=True)
                     test_results.append(test_result)
@@ -854,6 +857,7 @@ def main():
     argument_parser.add_argument("--qemu")
     argument_parser.add_argument("--arch")
     argument_parser.add_argument("--disable-rpmb", action="store_true")
+    argument_parser.add_argument("--timeout", type=int)
     argument_parser.add_argument("extra_qemu_flags", nargs="*")
     args = argument_parser.parse_args()
 
@@ -877,7 +881,8 @@ def main():
                     verbose=args.verbose,
                     rpmb=not args.disable_rpmb,
                     debug=args.debug,
-                    debug_on_error=args.debug_on_error)
+                    debug_on_error=args.debug_on_error,
+                    timeout=args.timeout)
 
     try:
         results = runner.run()
