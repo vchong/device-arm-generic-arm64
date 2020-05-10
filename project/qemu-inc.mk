@@ -17,6 +17,9 @@ PROJECT_QEMU_INC_LOCAL_DIR := $(GET_LOCAL_DIR)
 
 include project/$(QEMU_TRUSTY_PROJECT).mk
 
+# Derive RPMB key using HKDF
+WITH_HKDF_RPMB_KEY ?= true
+
 # Always allow provisioning for emulator builds
 STATIC_SYSTEM_STATE_FLAG_PROVISIONING_ALLOWED := 1
 
@@ -77,7 +80,7 @@ $(ATF_OUT_COPIED_FILES): $(ATF_OUT_DIR)/% : $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/%
 $(ATF_OUT_DIR)/RPMB_DATA: ATF_OUT_DIR := $(ATF_OUT_DIR)
 $(ATF_OUT_DIR)/RPMB_DATA: $(RPMB_DEV)
 	@echo Initialize rpmb device
-	$< --dev $(ATF_OUT_DIR)/RPMB_DATA --init --key "ea df 64 44 ea 65 5d 1c 87 27 d4 20 71 0d 53 42 dd 73 a3 38 63 e1 d7 94 c3 72 a6 ea e0 64 64 e6" --size 2048
+	$< --dev $(ATF_OUT_DIR)/RPMB_DATA --init --size 2048
 
 QEMU_SCRIPTS := \
 	$(QEMU_PY) \
