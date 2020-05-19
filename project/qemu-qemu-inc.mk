@@ -15,7 +15,7 @@
 #
 
 #
-#  This makefile containts rules for building QEMU for running Trusty.
+#  This makefile contains rules for building QEMU for running Trusty.
 #  It is expected that it will be included by the project that uses QEMU
 #  and the caller will configure the following variables:
 #
@@ -23,6 +23,8 @@
 #      QEMU_BUILD_BASE - location that will be used to store temp files and
 #                        build results.
 #      QEMU_ARCH       - qemu arch to build
+#      QEMU_TARGET     - targets to build, use comma to separate targets
+#                        if multiple targets are specified.
 #
 #  The following variable is returned to the caller:
 #      QEMU_BIN        - resulting qemu image
@@ -34,6 +36,7 @@ QEMU_MAKEFILE:=$(QEMU_BUILD_BASE)/Makefile
 
 $(QEMU_MAKEFILE): QEMU_ROOT:=$(QEMU_ROOT)
 $(QEMU_MAKEFILE): QEMU_BUILD_BASE:=$(QEMU_BUILD_BASE)
+$(QEMU_MAKEFILE): QEMU_TARGET:=$(QEMU_TARGET)
 $(QEMU_MAKEFILE):
 	mkdir -p $(QEMU_BUILD_BASE)
 	#--with-git=true sets the "git" program to /bin/true - it essentially disables git
@@ -42,7 +45,7 @@ $(QEMU_MAKEFILE):
 	# prebuilts GCC, i.e. currently we can only build QEMU with host toolchain. On
 	# some hosts compiler will complain about stringop truncation.
 	cd $(QEMU_BUILD_BASE) && $(abspath $(QEMU_ROOT)/configure) \
-		--target-list=aarch64-softmmu,arm-softmmu --with-git=true --disable-werror
+		--target-list=$(QEMU_TARGET) --with-git=true --disable-werror
 
 $(QEMU_BIN): QEMU_BUILD_BASE:=$(QEMU_BUILD_BASE)
 $(QEMU_BIN): $(QEMU_MAKEFILE) .PHONY
@@ -52,3 +55,4 @@ $(QEMU_BIN): $(QEMU_MAKEFILE) .PHONY
 EXTRA_BUILDDEPS += $(QEMU_BIN)
 
 QEMU_ROOT:=
+QEMU_TARGET:=

@@ -33,6 +33,7 @@ include project/qemu-atf-inc.mk
 QEMU_ROOT := external/qemu
 QEMU_BUILD_BASE := $(abspath $(BUILDDIR)/qemu-build)
 QEMU_ARCH := aarch64
+QEMU_TARGET := aarch64-softmmu,arm-softmmu
 include project/qemu-qemu-inc.mk
 
 LINUX_ARCH ?= arm64
