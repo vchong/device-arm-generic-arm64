@@ -125,4 +125,7 @@ WITH_TRUSTY_IPC := true
 
 SYMTAB_ENABLED ?= true
 
+# include software implementation of a SPI loopback device
+WITH_SW_SPI_LOOPBACK ?= true
+
 EXTRA_BUILDRULES += trusty/kernel/app/trusty/user-tasks.mk
