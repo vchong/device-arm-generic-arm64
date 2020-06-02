@@ -19,6 +19,8 @@ DEBUG ?= 2
 SMP_MAX_CPUS ?= 8
 SMP_CPU_CLUSTER_SHIFT ?= 2
 GIC_VERSION ?= 2
+# Use modern KM wrapping key size (256-bits)
+TRUSTY_KM_WRAPPING_KEY_SIZE ?= 32
 
 TARGET := generic-arm64
 
