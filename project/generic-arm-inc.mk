@@ -25,9 +25,9 @@ TARGET := generic-arm64
 ifeq (false,$(call TOBOOL,$(KERNEL_32BIT)))
 
 # Arm64 address space configuration
-KERNEL_ASPACE_BASE := 0xffffffffe0000000
-KERNEL_ASPACE_SIZE := 0x0000000020000000
-KERNEL_BASE        := 0xffffffffe0000000
+KERNEL_ASPACE_BASE := 0xffffffffc0000000
+KERNEL_ASPACE_SIZE := 0x0000000040000000
+KERNEL_BASE        := 0xffffffffc0000000
 
 USER_ASPACE_BASE   := 0x0000000000008000
 
@@ -41,7 +41,7 @@ endif
 
 else
 
-KERNEL_BASE        := 0xe0000000
+KERNEL_BASE        := 0xc0000000
 
 # ASLR is allowed on 32-bit platforms, but they are usually more space
 # conscious, and the extra page tables and weight from PIE may be more than
