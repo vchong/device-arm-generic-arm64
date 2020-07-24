@@ -567,9 +567,9 @@ c
                 kill_timer.cancel()
                 kill_timer.join()
 
-    def check_adb(self, args):
+    def check_adb(self, args, **kwargs):
         """As .adb(), but throws an exception if the command fails"""
-        code = self.adb(args)
+        code = self.adb(args, **kwargs)
         if code != 0:
             raise AdbFailure(args, code)
 
@@ -603,9 +603,9 @@ c
         sock.close()
         self.check_adb(["connect", "localhost:%d" % port])
         self.scan_transport(port)
-        self.check_adb(["wait-for-device"])
+        self.check_adb(["wait-for-device"], timeout=120)
         self.check_adb(["root"])
-        self.check_adb(["wait-for-device"])
+        self.check_adb(["wait-for-device"], timeout=120)
 
         # Files put onto the data partition in the Android build will not
         # actually be populated into userdata.img when make dist is used.
