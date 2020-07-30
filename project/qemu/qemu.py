@@ -573,6 +573,28 @@ c
         if code != 0:
             raise AdbFailure(args, code)
 
+    def adb_root(self):
+        """Restarts adbd with root permissions and waits until it's back up"""
+        MAX_TRIES = 10
+        num_tries = 0
+
+        self.check_adb(["root"])
+
+        while True:
+            # adbd might not be down by this point yet
+            self.adb(["wait-for-device"])
+
+            # Check that adbd is up and running with root permissions
+            code = self.adb(["shell",
+                             "if [[ $(id -u) -ne 0 ]] ; then exit 1; fi"])
+            if code == 0:
+                return
+
+            num_tries += 1
+            if num_tries >= MAX_TRIES:
+                raise AdbFailure(["root"], code)
+            time.sleep(1)
+
     def scan_transport(self, port, expect_none=False):
         """Given a port and `adb devices -l`, find the transport id"""
         output = subprocess.check_output([self.adb_bin(), "devices", "-l"])
@@ -604,8 +626,7 @@ c
         self.check_adb(["connect", "localhost:%d" % port])
         self.scan_transport(port)
         self.check_adb(["wait-for-device"], timeout=120)
-        self.check_adb(["root"])
-        self.check_adb(["wait-for-device"], timeout=120)
+        self.adb_root()
 
         # Files put onto the data partition in the Android build will not
         # actually be populated into userdata.img when make dist is used.
