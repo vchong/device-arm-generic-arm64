@@ -117,6 +117,7 @@ TRUSTY_BUILTIN_USER_TASKS := \
 	trusty/user/app/keymaster \
 	trusty/user/app/sample/hwcrypto \
 	trusty/user/app/storage \
+	trusty/user/base/app/system_state_server_static \
 
 # on generic-arm64 hwcrypto requires FAKE HWRNG and HWKEY services
 WITH_FAKE_HWRNG ?= true

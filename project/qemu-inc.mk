@@ -17,6 +17,9 @@ PROJECT_QEMU_INC_LOCAL_DIR := $(GET_LOCAL_DIR)
 
 include project/$(QEMU_TRUSTY_PROJECT).mk
 
+# Always allow provisioning for emulator builds
+STATIC_SYSTEM_STATE_FLAG_PROVISIONING_ALLOWED := 1
+
 MODULES += \
 	trusty/user/app/storage/rpmb_dev \
 
