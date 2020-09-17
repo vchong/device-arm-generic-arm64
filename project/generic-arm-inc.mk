@@ -86,6 +86,12 @@ USER_LTO_ENABLED := true
 # enable LTO in kernel modules
 KERNEL_LTO_ENABLED := true
 
+# enable cfi in trusty modules
+CFI_ENABLED := true
+ifeq ($(shell expr $(DEBUG) \>= 2), 1)
+CFI_DIAGNOSTICS := true
+endif
+
 #
 # Modules to be compiled into lk.bin
 #
