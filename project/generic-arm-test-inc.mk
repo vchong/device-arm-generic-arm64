@@ -21,6 +21,6 @@ include trusty/user/base/usertests-inc.mk
 
 # Only enable pattern init in test-builds, as it has runtime overhead
 # and intentionally attempts to induce crashes for bad assumptions.
-GLOBAL_COMPILEFLAGS += -ftrivial-auto-var-init=pattern
+GLOBAL_SHARED_COMPILEFLAGS += -ftrivial-auto-var-init=pattern
 
 TEST_BUILD := true
