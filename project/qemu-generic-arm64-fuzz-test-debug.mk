@@ -1,4 +1,4 @@
-# Copyright (C) 2019 The Android Open Source Project
+# Copyright (C) 2020 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-GIC_VERSION := 3
-
-include project/generic-arm64-test-debug-inc.mk
+QEMU_TRUSTY_PROJECT := generic-arm64-fuzz-test-debug
+include project/qemu-inc.mk

@@ -1,4 +1,4 @@
-# Copyright (C) 2019 The Android Open Source Project
+# Copyright (C) 2020 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,8 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-GIC_VERSION := 3
+# Clang doesn't support combination of sancov + UBSan
+UBSAN_ENABLED := false
+
+# Clang doesn't support combination of sancov + CFI
+CFI_ENABLED := false
+CFI_DIAGNOSTICS := false
 
 include project/generic-arm64-test-debug-inc.mk
