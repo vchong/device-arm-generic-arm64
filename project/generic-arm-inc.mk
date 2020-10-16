@@ -84,7 +84,7 @@ GLOBAL_DEFINES += MMU_IDENT_SIZE_SHIFT=38
 USER_LTO_ENABLED := true
 
 # enable LTO in kernel modules
-KENREL_LTO_ENABLED := true
+KERNEL_LTO_ENABLED := true
 
 #
 # Modules to be compiled into lk.bin
