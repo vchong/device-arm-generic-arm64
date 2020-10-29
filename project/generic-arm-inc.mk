@@ -98,8 +98,17 @@ ifeq (true,$(call TOBOOL,$(UBSAN_ENABLED)))
 include trusty/kernel/lib/ubsan/enable.mk
 endif
 
-# enable stack protector in user space
+ifeq (false,$(call TOBOOL,$(KERNEL_32BIT)))
+ifeq (false,$(call TOBOOL,$(USER_32BIT)))
+# enable shadow call stack in user-tasks modules
+USER_SCS_ENABLED ?= true
+endif
+endif
+
+# fall back to user-space stack protector if user-space SCS is off
+ifneq (true,$(call TOBOOL,$(USER_SCS_ENABLED)))
 USER_STACK_PROTECTOR ?= true
+endif
 
 #
 # Modules to be compiled into lk.bin
