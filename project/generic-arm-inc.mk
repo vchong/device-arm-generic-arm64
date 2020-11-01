@@ -98,6 +98,9 @@ ifeq (true,$(call TOBOOL,$(UBSAN_ENABLED)))
 include trusty/kernel/lib/ubsan/enable.mk
 endif
 
+# enable stack protector in user space
+USER_STACK_PROTECTOR ?= true
+
 #
 # Modules to be compiled into lk.bin
 #
