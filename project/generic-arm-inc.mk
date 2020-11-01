@@ -81,15 +81,15 @@ GLOBAL_DEFINES += HEAP_GROW_SIZE=8192
 GLOBAL_DEFINES += MMU_IDENT_SIZE_SHIFT=38
 
 # enable LTO in user-tasks modules
-USER_LTO_ENABLED := true
+USER_LTO_ENABLED ?= true
 
 # enable LTO in kernel modules
-KERNEL_LTO_ENABLED := true
+KERNEL_LTO_ENABLED ?= true
 
 # enable cfi in trusty modules
-CFI_ENABLED := true
+CFI_ENABLED ?= true
 ifeq ($(shell expr $(DEBUG) \>= 2), 1)
-CFI_DIAGNOSTICS := true
+CFI_DIAGNOSTICS ?= true
 endif
 
 #
