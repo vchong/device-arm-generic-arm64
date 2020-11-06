@@ -92,6 +92,12 @@ ifeq ($(shell expr $(DEBUG) \>= 2), 1)
 CFI_DIAGNOSTICS ?= true
 endif
 
+# disable UBSan by default
+UBSAN_ENABLED ?= false
+ifeq (true,$(call TOBOOL,$(UBSAN_ENABLED)))
+include trusty/kernel/lib/ubsan/enable.mk
+endif
+
 #
 # Modules to be compiled into lk.bin
 #
