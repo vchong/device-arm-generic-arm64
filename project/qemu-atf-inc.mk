@@ -29,6 +29,8 @@
 #
 #  The following variable is returned to the caller:
 #      ATF_OUT_DIR    - Directory containing ATF images
+#      ATF_BUILD_BASE - location that will be used to store temp files and
+#                       build results.
 #
 #
 
@@ -63,7 +65,6 @@ $(ATF_BIN): .PHONY
 EXTRA_BUILDDEPS += $(ATF_BIN)
 
 ATF_ROOT:=
-ATF_BUILD_BASE:=
 ATF_PLAT:=
 ATF_DEBUG:=
 ATF_WITH_TRUSTY_GENERIC_SERVICES:=

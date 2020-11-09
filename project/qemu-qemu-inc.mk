@@ -28,6 +28,8 @@
 #
 #  The following variable is returned to the caller:
 #      QEMU_BIN        - resulting qemu image
+#      QEMU_BUILD_BASE - location that will be used to store temp files and
+#                        build results.
 #
 #
 
@@ -54,5 +56,6 @@ $(QEMU_BIN): $(QEMU_MAKEFILE) .PHONY
 # Add QEMU_BIN to the list of project dependencies
 EXTRA_BUILDDEPS += $(QEMU_BIN)
 
+QEMU_ARCH:=
 QEMU_ROOT:=
 QEMU_TARGET:=

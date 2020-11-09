@@ -123,6 +123,7 @@ $(QEMU_CONFIG): QEMU_BIN := $(subst $(BUILDDIR)/,,$(QEMU_BIN))
 $(QEMU_CONFIG): EXTRA_QEMU_FLAGS := ["-machine", "gic-version=$(GIC_VERSION)"]
 $(QEMU_CONFIG): ATF_OUT_DIR := $(subst $(BUILDDIR)/,,$(ATF_OUT_DIR))
 $(QEMU_CONFIG): LINUX_BUILD_DIR := $(subst $(BUILDDIR)/,,$(LINUX_BUILD_DIR))
+$(QEMU_CONFIG): LINUX_ARCH := $(LINUX_ARCH)
 $(QEMU_CONFIG): ANDROID_PREBUILT := $(subst $(BUILDDIR)/,,$(ANDROID_PREBUILT))
 $(QEMU_CONFIG): RPMB_DEV := $(subst $(BUILDDIR)/,,$(RPMB_DEV))
 $(QEMU_CONFIG): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_DATA
@@ -165,3 +166,40 @@ $(RUN_SCRIPT): $(QEMU_SCRIPTS) $(QEMU_CONFIG)
 	@chmod +x $@
 
 EXTRA_BUILDDEPS += $(RUN_SCRIPT)
+
+ifeq (true,$(call TOBOOL,$(PACKAGE_QEMU_TRUSTY)))
+
+# Files & directories to copy into QEMU package archive
+QEMU_PACKAGE_FILES := \
+	$(OUTBIN) $(QEMU_BUILD_BASE) $(QEMU_SCRIPTS) $(QEMU_CONFIG) $(RPMB_DEV) \
+	$(RUN_SCRIPT) $(RUN_QEMU_SCRIPT) $(ANDROID_PREBUILT) $(QEMU_BIN) \
+	$(ATF_BUILD_BASE) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/bl31.bin \
+	$(ATF_OUT_DIR)/RPMB_DATA $(ATF_OUT_COPIED_FILES) $(LINUX_IMAGE) \
+
+# Other files/directories that should be included in the package but which are
+# not make targets and therefore cannot be pre-requisites. The target that
+# creates these files must be in the QEMU_PACKAGE_FILES variable.
+QEMU_PACKAGE_EXTRA_FILES := \
+	$(LINUX_BUILD_DIR)/arch $(LINUX_BUILD_DIR)/scripts \
+
+include project/qemu-package-inc.mk
+endif
+
+ANDROID_PREBUILT :=
+ATF_BUILD_BASE :=
+ATF_OUT_COPIED_FILES :=
+ATF_OUT_DIR :=
+ATF_SYMLINKS :=
+LINUX_ARCH :=
+LINUX_BUILD_DIR :=
+LINUX_IMAGE :=
+RUN_QEMU_SCRIPT :=
+RUN_SCRIPT :=
+TEST_RUNNER_BIN :=
+QEMU_BIN :=
+QEMU_BUILD_BASE :=
+QEMU_CONFIG :=
+QEMU_ERROR_PY :=
+QEMU_OPTIONS_PY :=
+QEMU_PY :=
+QEMU_SCRIPTS :=

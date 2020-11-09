@@ -18,6 +18,7 @@
 # LINUX_ARCH contains the architecture to build for (Global)
 # Outputs:
 # LINUX_BUILD_DIR contains the path to the built linux kernel sources
+# LINUX_IMAGE path of the final linux image target
 
 # This Makefile will build the Linux kernel with our configuration.
 
@@ -71,7 +72,6 @@ $(LINUX_IMAGE): .PHONY
 # Add LINUX_IMAGE to the list of project dependencies
 EXTRA_BUILDDEPS += $(LINUX_IMAGE)
 
-LINUX_IMAGE :=
 LINUX_DEFCONFIG_FRAGMENTS :=
 LINUX_CONFIG_DIR :=
 LINUX_SRC :=
