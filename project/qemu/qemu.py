@@ -53,12 +53,13 @@ class Config(object):
         if config:
             config_dict = json.load(config)
 
-        self.android = config_dict.get("android")
-        self.linux = config_dict.get("linux")
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        self.android = os.path.join(script_dir, config_dict.get("android"))
+        self.linux = os.path.join(script_dir, config_dict.get("linux"))
         self.linux_arch = config_dict.get("linux_arch")
-        self.atf = config_dict.get("atf")
-        self.qemu = config_dict.get("qemu", "qemu-system-aarch64")
-        self.rpmbd = config_dict.get("rpmbd")
+        self.atf = os.path.join(script_dir, config_dict.get("atf"))
+        self.qemu = os.path.join(script_dir, config_dict.get("qemu", "qemu-system-aarch64"))
+        self.rpmbd = os.path.join(script_dir, config_dict.get("rpmbd"))
         self.arch = config_dict.get("arch")
         self.extra_qemu_flags = config_dict.get("extra_qemu_flags", [])
 

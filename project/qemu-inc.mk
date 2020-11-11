@@ -106,14 +106,25 @@ $(QEMU_OPTIONS_PY): $(PROJECT_QEMU_INC_LOCAL_DIR)/qemu/qemu_arm64_options.py
 	@echo copying $@
 	@cp $< $@
 
+# Copy Android prebuilts into the build directory so that the build does not
+# depend on any files in the source tree. We want to package the build artifacts
+# without any dependencies on the sources.
+ANDROID_PREBUILT := $(BUILDDIR)/aosp/android
+$(ANDROID_PREBUILT): trusty/prebuilts/aosp/android
+	@echo copying Android prebuilts
+	@$(MKDIR)
+	@cp -r $< $@
+
+EXTRA_BUILDDEPS += $(ANDROID_PREBUILT)
+
 # Save variables to a json file to export paths known to the build system to
 # the test system
-$(QEMU_CONFIG): QEMU_BIN := $(QEMU_BIN)
+$(QEMU_CONFIG): QEMU_BIN := $(subst $(BUILDDIR)/,,$(QEMU_BIN))
 $(QEMU_CONFIG): EXTRA_QEMU_FLAGS := ["-machine", "gic-version=$(GIC_VERSION)"]
-$(QEMU_CONFIG): ATF_OUT_DIR := $(ATF_OUT_DIR)
-$(QEMU_CONFIG): LINUX_BUILD_DIR := $(LINUX_BUILD_DIR)
-$(QEMU_CONFIG): ANDROID_PREBUILT := $(abspath trusty/prebuilts/aosp/android)
-$(QEMU_CONFIG): RPMB_DEV := $(RPMB_DEV)
+$(QEMU_CONFIG): ATF_OUT_DIR := $(subst $(BUILDDIR)/,,$(ATF_OUT_DIR))
+$(QEMU_CONFIG): LINUX_BUILD_DIR := $(subst $(BUILDDIR)/,,$(LINUX_BUILD_DIR))
+$(QEMU_CONFIG): ANDROID_PREBUILT := $(subst $(BUILDDIR)/,,$(ANDROID_PREBUILT))
+$(QEMU_CONFIG): RPMB_DEV := $(subst $(BUILDDIR)/,,$(RPMB_DEV))
 $(QEMU_CONFIG): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_DATA
 	@echo generating $@
 	@echo '{ "linux": "$(LINUX_BUILD_DIR)",' > $@
@@ -129,24 +140,28 @@ EXTRA_BUILDDEPS += $(QEMU_CONFIG)
 
 # Create a wrapper script around run-qemu-helper which defaults arguments to
 # those needed to run this build
-$(RUN_QEMU_SCRIPT): QEMU_BIN := $(QEMU_BIN)
-$(RUN_QEMU_SCRIPT): ATF_OUT_DIR := $(ATF_OUT_DIR)
-$(RUN_QEMU_SCRIPT): LINUX_BUILD_DIR := $(LINUX_BUILD_DIR)
+$(RUN_QEMU_SCRIPT): QEMU_BIN := $(subst $(BUILDDIR)/,,$(QEMU_BIN))
+$(RUN_QEMU_SCRIPT): ATF_OUT_DIR := $(subst $(BUILDDIR)/,,$(ATF_OUT_DIR))
+$(RUN_QEMU_SCRIPT): LINUX_BUILD_DIR := $(subst $(BUILDDIR)/,,$(LINUX_BUILD_DIR))
 $(RUN_QEMU_SCRIPT): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_DATA
 	@echo generating $@
 	@echo "#!/bin/sh" >$@
-	@echo 'cd "$(ATF_OUT_DIR)"' >>$@
-	@echo 'KERNEL_DIR="$(LINUX_BUILD_DIR)" QEMU="$(QEMU_BIN)" ./run-qemu-helper "$$@"' >>$@
+	@echo 'SCRIPT_DIR=$$(dirname "$$0")' >>$@
+	@echo 'cd "$$SCRIPT_DIR/$(ATF_OUT_DIR)"' >>$@
+	@echo 'KERNEL_DIR="$$SCRIPT_DIR/$(LINUX_BUILD_DIR)" QEMU="$$SCRIPT_DIR/$(QEMU_BIN)" ./run-qemu-helper "$$@"' >>$@
 	@chmod +x $@
 
 EXTRA_BUILDDEPS += $(RUN_QEMU_SCRIPT)
 
 # Create a wrapper around qemu.py which defaults the config
 # $(RUN_SCRIPT) will be the device-generic interface called by run-tests
+$(RUN_SCRIPT): QEMU_PY := $(subst $(BUILDDIR)/,,$(QEMU_PY))
+$(RUN_SCRIPT): QEMU_CONFIG := $(subst $(BUILDDIR)/,,$(QEMU_CONFIG))
 $(RUN_SCRIPT): $(QEMU_SCRIPTS) $(QEMU_CONFIG)
 	@echo generating $@
 	@echo "#!/bin/sh" >$@
-	@echo 'python $(abspath $(QEMU_PY)) -c $(abspath $(QEMU_CONFIG)) "$$@"' >>$@
+	@echo 'SCRIPT_DIR=$$(dirname "$$0")' >>$@
+	@echo 'python "$$SCRIPT_DIR/$(QEMU_PY)" -c "$$SCRIPT_DIR/$(QEMU_CONFIG)" "$$@"' >>$@
 	@chmod +x $@
 
 EXTRA_BUILDDEPS += $(RUN_SCRIPT)
