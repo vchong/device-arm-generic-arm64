@@ -19,4 +19,6 @@ UBSAN_ENABLED := false
 CFI_ENABLED := false
 CFI_DIAGNOSTICS := false
 
+USER_COVERAGE_ENABLED := true
+
 include project/generic-arm64-test-debug-inc.mk
