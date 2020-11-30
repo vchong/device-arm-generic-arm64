@@ -134,6 +134,7 @@ TRUSTY_PREBUILT_USER_TASKS :=
 # compiled from source
 TRUSTY_BUILTIN_USER_TASKS := \
 	trusty/user/app/avb \
+	trusty/user/app/confirmationui \
 	trusty/user/app/gatekeeper \
 	trusty/user/app/keymaster \
 	trusty/user/app/sample/hwcrypto \
