@@ -36,9 +36,33 @@
 QEMU_BIN:=$(QEMU_BUILD_BASE)/$(QEMU_ARCH)-softmmu/qemu-system-$(QEMU_ARCH)
 QEMU_MAKEFILE:=$(QEMU_BUILD_BASE)/Makefile
 
+# Set of features disabled by the AOSP emulator. We don't need these features
+# either, and we want minimal dependencies.
+QEMU_AOSP_DISABLES := \
+            --disable-attr \
+            --disable-blobs \
+            --disable-curl \
+            --disable-curses \
+            --disable-docs \
+            --disable-glusterfs \
+            --disable-gtk \
+            --disable-guest-agent \
+            --disable-libnfs \
+            --disable-libiscsi \
+            --disable-libssh2 \
+            --disable-libusb \
+            --disable-seccomp \
+            --disable-spice \
+            --disable-usb-redir \
+            --disable-user \
+            --disable-vde \
+            --disable-vhdx \
+            --disable-vhost-net \
+
 $(QEMU_MAKEFILE): QEMU_ROOT:=$(QEMU_ROOT)
 $(QEMU_MAKEFILE): QEMU_BUILD_BASE:=$(QEMU_BUILD_BASE)
 $(QEMU_MAKEFILE): QEMU_TARGET:=$(QEMU_TARGET)
+$(QEMU_MAKEFILE): QEMU_AOSP_DISABLES:=$(QEMU_AOSP_DISABLES)
 $(QEMU_MAKEFILE):
 	mkdir -p $(QEMU_BUILD_BASE)
 	#--with-git=true sets the "git" program to /bin/true - it essentially disables git
@@ -47,7 +71,8 @@ $(QEMU_MAKEFILE):
 	# prebuilts GCC, i.e. currently we can only build QEMU with host toolchain. On
 	# some hosts compiler will complain about stringop truncation.
 	cd $(QEMU_BUILD_BASE) && $(abspath $(QEMU_ROOT)/configure) \
-		--target-list=$(QEMU_TARGET) --with-git=true --disable-werror
+		--target-list=$(QEMU_TARGET) --with-git=true --disable-werror \
+		--disable-gcrypt --disable-vnc-png $(QEMU_AOSP_DISABLES)
 
 $(QEMU_BIN): QEMU_BUILD_BASE:=$(QEMU_BUILD_BASE)
 $(QEMU_BIN): $(QEMU_MAKEFILE) .PHONY
@@ -59,3 +84,4 @@ EXTRA_BUILDDEPS += $(QEMU_BIN)
 QEMU_ARCH:=
 QEMU_ROOT:=
 QEMU_TARGET:=
+QEMU_AOSP_DISABLES:=
