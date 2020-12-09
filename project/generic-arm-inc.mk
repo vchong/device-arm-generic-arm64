@@ -117,6 +117,7 @@ MODULES += \
 	trusty/kernel/lib/sm \
 	trusty/kernel/lib/trusty \
 	trusty/kernel/lib/memlog \
+	trusty/kernel/services/apploader \
 	trusty/kernel/services/smc \
 
 #
@@ -149,6 +150,7 @@ TRUSTY_BUILTIN_USER_TASKS := \
 	trusty/user/app/sample/hwcrypto \
 	trusty/user/app/sample/secure_fb_mock_impl \
 	trusty/user/app/storage \
+	trusty/user/base/app/apploader \
 	trusty/user/base/app/system_state_server_static \
 
 ifeq (true,$(call TOBOOL,$(USER_COVERAGE_ENABLED)))
