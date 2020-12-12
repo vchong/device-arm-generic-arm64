@@ -173,14 +173,14 @@ ifeq (true,$(call TOBOOL,$(PACKAGE_QEMU_TRUSTY)))
 QEMU_PACKAGE_FILES := \
 	$(OUTBIN) $(QEMU_BUILD_BASE) $(QEMU_SCRIPTS) $(QEMU_CONFIG) $(RPMB_DEV) \
 	$(RUN_SCRIPT) $(RUN_QEMU_SCRIPT) $(ANDROID_PREBUILT) $(QEMU_BIN) \
-	$(ATF_BUILD_BASE) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/bl31.bin \
+	$(ATF_SYMLINKS) $(ATF_OUT_DIR)/bl31.bin \
 	$(ATF_OUT_DIR)/RPMB_DATA $(ATF_OUT_COPIED_FILES) $(LINUX_IMAGE) \
 
 # Other files/directories that should be included in the package but which are
 # not make targets and therefore cannot be pre-requisites. The target that
 # creates these files must be in the QEMU_PACKAGE_FILES variable.
 QEMU_PACKAGE_EXTRA_FILES := \
-	$(LINUX_BUILD_DIR)/arch $(LINUX_BUILD_DIR)/scripts \
+	$(LINUX_BUILD_DIR)/arch $(LINUX_BUILD_DIR)/scripts $(ATF_BUILD_BASE) \
 
 include project/qemu-package-inc.mk
 endif
