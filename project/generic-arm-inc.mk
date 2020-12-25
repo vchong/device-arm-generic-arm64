@@ -101,6 +101,7 @@ include trusty/kernel/lib/ubsan/enable.mk
 endif
 
 ifeq (false,$(call TOBOOL,$(KERNEL_32BIT)))
+KERNEL_SCS_ENABLED ?= true
 ifeq (false,$(call TOBOOL,$(USER_32BIT)))
 # enable shadow call stack in user-tasks modules
 USER_SCS_ENABLED ?= true
