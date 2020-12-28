@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 """Run Trusty under QEMU in different configurations"""
 import argparse
 import errno
