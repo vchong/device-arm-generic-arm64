@@ -21,4 +21,8 @@ CFI_DIAGNOSTICS := false
 
 USER_COVERAGE_ENABLED := true
 
+# Reduce amount logs to speed up fuzzing
+GLOBAL_SHARED_COMPILEFLAGS += -Wno-macro-redefined
+GLOBAL_DEFINES += TLOG_LVL=1 # TLOG_LVL_CRIT
+
 include project/generic-arm64-test-debug-inc.mk
