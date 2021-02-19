@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Clang doesn't support combination of sancov + UBSan
-UBSAN_ENABLED := false
-
 # Clang doesn't support combination of sancov + CFI
 CFI_ENABLED := false
 CFI_DIAGNOSTICS := false
