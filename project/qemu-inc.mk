@@ -15,6 +15,8 @@
 
 PROJECT_QEMU_INC_LOCAL_DIR := $(GET_LOCAL_DIR)
 
+APPLOADER_ALLOW_NS_CONNECT := true
+
 include project/$(QEMU_TRUSTY_PROJECT).mk
 
 # Derive RPMB key using HKDF
