@@ -30,6 +30,24 @@ MODULES += \
 
 RPMB_DEV := $(BUILDDIR)/host_tools/rpmb_dev
 
+PROJECT_KEYS_DIR := $(PROJECT_QEMU_INC_LOCAL_DIR)/keys
+
+APPLOADER_SIGN_PRIVATE_KEY_0_FILE := \
+	$(PROJECT_KEYS_DIR)/apploader_sign_test_private_key_0.der
+
+APPLOADER_SIGN_PUBLIC_KEY_0_FILE := \
+	$(PROJECT_KEYS_DIR)/apploader_sign_test_public_key_0.der
+
+APPLOADER_SIGN_PRIVATE_KEY_1_FILE := \
+	$(PROJECT_KEYS_DIR)/apploader_sign_test_private_key_1.der
+
+APPLOADER_SIGN_PUBLIC_KEY_1_FILE := \
+	$(PROJECT_KEYS_DIR)/apploader_sign_test_public_key_1.der
+
+# The default signing key is key 0, but each application
+# can specify a different key identifier
+APPLOADER_SIGN_KEY_ID ?= 0
+
 ATF_DEBUG := 1
 ATF_PLAT := qemu
 ATF_WITH_TRUSTY_GENERIC_SERVICES := true
