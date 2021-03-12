@@ -48,6 +48,9 @@ APPLOADER_SIGN_PUBLIC_KEY_1_FILE := \
 # can specify a different key identifier
 APPLOADER_SIGN_KEY_ID ?= 0
 
+APPLOADER_ENCRYPT_KEY_0_FILE := \
+	$(PROJECT_KEYS_DIR)/apploader_encrypt_test_key_0.bin
+
 ATF_DEBUG := 1
 ATF_PLAT := qemu
 ATF_WITH_TRUSTY_GENERIC_SERVICES := true
