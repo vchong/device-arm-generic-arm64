@@ -52,6 +52,7 @@ TEST_RUNNER_BIN := $(BUILDDIR)/test-runner/test-runner.bin
 
 RUN_QEMU_SCRIPT := $(BUILDDIR)/run-qemu
 RUN_SCRIPT := $(BUILDDIR)/run
+STOP_SCRIPT := $(BUILDDIR)/stop
 QEMU_CONFIG := $(BUILDDIR)/config.json
 QEMU_PY := $(BUILDDIR)/qemu.py
 QEMU_ERROR_PY := $(BUILDDIR)/qemu_error.py
@@ -169,13 +170,22 @@ $(RUN_SCRIPT): $(QEMU_SCRIPTS) $(QEMU_CONFIG)
 
 EXTRA_BUILDDEPS += $(RUN_SCRIPT)
 
+# Create a script to stop all stale emulators.
+$(STOP_SCRIPT):
+	@echo generating $@
+	@echo "#!/bin/sh" >$@
+	@echo 'killall qemu-system-aarch64' >>$@
+	@chmod +x $@
+
+EXTRA_BUILDDEPS += $(STOP_SCRIPT)
+
 ifeq (true,$(call TOBOOL,$(PACKAGE_QEMU_TRUSTY)))
 
 # Files & directories to copy into QEMU package archive
 QEMU_PACKAGE_FILES := \
 	$(OUTBIN) $(QEMU_SCRIPTS) $(QEMU_CONFIG) $(RPMB_DEV) \
-	$(RUN_SCRIPT) $(RUN_QEMU_SCRIPT) $(ANDROID_PREBUILT) $(QEMU_BIN) \
-	$(ATF_SYMLINKS) $(ATF_OUT_DIR)/bl31.bin \
+	$(RUN_SCRIPT) $(RUN_QEMU_SCRIPT) $(STOP_SCRIPT) $(ANDROID_PREBUILT) \
+	$(QEMU_BIN) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/bl31.bin \
 	$(ATF_OUT_DIR)/RPMB_DATA $(ATF_OUT_COPIED_FILES) $(LINUX_IMAGE) \
 
 # Other files/directories that should be included in the package but which are
