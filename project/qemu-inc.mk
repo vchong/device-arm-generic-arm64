@@ -82,7 +82,7 @@ LINUX_ARCH ?= arm64
 include project/linux-inc.mk
 
 EXTRA_BUILDRULES += external/trusty/bootloader/test-runner/test-runner-inc.mk
-TEST_RUNNER_BIN := $(BUILDDIR)/test-runner/test-runner.bin
+TEST_RUNNER_BIN := $(BUILDDIR)/test-runner/external/trusty/bootloader/test-runner/test-runner.bin
 
 RUN_QEMU_SCRIPT := $(BUILDDIR)/run-qemu
 RUN_SCRIPT := $(BUILDDIR)/run
