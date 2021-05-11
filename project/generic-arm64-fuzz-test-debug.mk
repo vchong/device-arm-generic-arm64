@@ -13,7 +13,8 @@
 # limitations under the License.
 
 # Clang doesn't support combination of sancov + CFI
-CFI_ENABLED := false
+USER_CFI_ENABLED := false
+KERNEL_CFI_ENABLED := false
 CFI_DIAGNOSTICS := false
 
 USER_COVERAGE_ENABLED := true

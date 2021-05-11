@@ -87,7 +87,9 @@ USER_LTO_ENABLED ?= true
 KERNEL_LTO_ENABLED ?= true
 
 # enable cfi in trusty modules
-CFI_ENABLED ?= true
+USER_CFI_ENABLED ?= true
+KERNEL_CFI_ENABLED ?= true
+
 ifeq ($(shell expr $(DEBUG) \>= 2), 1)
 CFI_DIAGNOSTICS ?= true
 endif
