@@ -11,13 +11,16 @@ class QemuArm64Options(object):
     MACHINE = "virt,secure=on,virtualization=on"
 
     BASIC_ARGS = [
+        "-serial", "tcp:localhost:5552",
+        "-serial", "tcp:localhost:5553",
         "-nographic", "-cpu", "cortex-a57", "-smp", "4", "-m", "1024", "-d",
         "unimp", "-semihosting-config", "enable,target=native", "-no-acpi",
     ]
 
     LINUX_ARGS = (
         "earlyprintk console=ttyAMA0,38400 keep_bootcon "
-        "root=/dev/vda ro init=/init androidboot.hardware=qemu_trusty")
+        "loglevel=7 androidboot.selinux=permissive "
+        "root=/dev/vda init=/init androidboot.hardware=qemu_trusty")
 
     def __init__(self, config):
         self.args = []
