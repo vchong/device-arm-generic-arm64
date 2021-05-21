@@ -154,10 +154,12 @@ $(QEMU_CONFIG): $(ATF_OUT_COPIED_FILES) $(ATF_SYMLINKS) $(ATF_OUT_DIR)/RPMB_DATA
 	@echo generating $@
 	@echo '{ "linux": "$(LINUX_BUILD_DIR)",' > $@
 	@echo '  "linux_arch": "$(LINUX_ARCH)",' >> $@
-	@echo '  "atf": "$(ATF_OUT_DIR)", ' >> $@
+	@#echo '  "atf": "$(ATF_OUT_DIR)", ' >> $@
+	@echo '  "atf": "../../../optee/out/bin", ' >> $@
 	@echo '  "qemu": "$(QEMU_BIN)", ' >> $@
 	@echo '  "extra_qemu_flags": $(EXTRA_QEMU_FLAGS), ' >> $@
-	@echo '  "android": "$(ANDROID_PREBUILT)", ' >> $@
+	@#echo '  "android": "$(ANDROID_PREBUILT)", ' >> $@
+	@echo '  "android": "../../../aosp", ' >> $@
 	@echo '  "rpmbd": "$(RPMB_DEV)", ' >> $@
 	@echo '  "arch": "$(ARCH)" }' >> $@
 
