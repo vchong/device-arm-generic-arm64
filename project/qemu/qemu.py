@@ -797,6 +797,7 @@ c
             args += forward_ports(ports)
 
             qemu_cmd = [self.config.qemu] + args
+            print(qemu_cmd)
             qemu_proc = subprocess.Popen(
                 qemu_cmd,
                 cwd=self.config.atf,
