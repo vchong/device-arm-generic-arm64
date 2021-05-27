@@ -25,6 +25,11 @@ WITH_HKDF_RPMB_KEY ?= true
 # Always allow provisioning for emulator builds
 STATIC_SYSTEM_STATE_FLAG_PROVISIONING_ALLOWED := 1
 
+# Emulator builds are unlocked by default. qemu-generic-arm32-test-debug
+# overrides this to ensure that we have at least one target that tests with app
+# loading locked.
+STATIC_SYSTEM_STATE_FLAG_APP_LOADING_UNLOCKED ?= 1
+
 MODULES += \
 	trusty/user/app/storage/rpmb_dev \
 
@@ -44,9 +49,17 @@ APPLOADER_SIGN_PRIVATE_KEY_1_FILE := \
 APPLOADER_SIGN_PUBLIC_KEY_1_FILE := \
 	$(PROJECT_KEYS_DIR)/apploader_sign_test_public_key_1.der
 
+# Key ID 1 should only be allowed if SYSTEM_STATE_FLAG_APP_LOADING_UNLOCKED is
+# true
+APPLOADER_SIGN_KEY_1_UNLOCKED_ONLY := true
+
 # The default signing key is key 0, but each application
 # can specify a different key identifier
 APPLOADER_SIGN_KEY_ID ?= 0
+
+# Treat key slot 1 as a dev key by default. In tests this key is only expected
+# to be enabled if SYSTEM_STATE_FLAG_APP_LOADING_UNLOCKED is true.
+APPLOADER_SIGN_UNLOCKED_KEY_ID ?= 1
 
 APPLOADER_ENCRYPT_KEY_0_FILE := \
 	$(PROJECT_KEYS_DIR)/apploader_encrypt_test_key_0.bin

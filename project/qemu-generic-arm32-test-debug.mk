@@ -16,4 +16,9 @@
 QEMU_TRUSTY_PROJECT := generic-arm32-test-debug
 TEST_RUNNER_ARCH := arm64
 LINUX_ARCH := arm64
+
+# Override the app loading unlock state to test with app loading "locked" (i.e.
+# key 1 disabled). See qemu-inc.mk for more details on app loading locking
+STATIC_SYSTEM_STATE_FLAG_APP_LOADING_UNLOCKED := 0
+
 include project/qemu-inc.mk
