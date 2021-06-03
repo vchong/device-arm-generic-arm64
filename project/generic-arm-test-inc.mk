@@ -24,6 +24,6 @@ include trusty/user/base/usertests-inc.mk
 GLOBAL_SHARED_COMPILEFLAGS += -ftrivial-auto-var-init=pattern
 
 # Enable hwcrypto unittest keyslots and tests
-GLOBAL_DEFINES += WITH_HWCRYPTO_UNITTEST=1
+GLOBAL_USER_COMPILEFLAGS += -DWITH_HWCRYPTO_UNITTEST=1
 
 TEST_BUILD := true
