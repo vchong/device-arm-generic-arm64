@@ -16,4 +16,12 @@
 USER_32BIT := true
 
 QEMU_TRUSTY_PROJECT := generic-arm64-test-debug
+
+# Version checks are enforced by default. We override this to ensure that we
+# have at least one target to test that we can disable this enforcement.
+#
+# a value of 1 indicates that we will skip updating the rollback version, 2 will
+# skip the version check entirely.
+STATIC_SYSTEM_STATE_FLAG_APP_LOADING_VERSION_CHECK := 2
+
 include project/qemu-inc.mk
