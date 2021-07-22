@@ -626,7 +626,7 @@ c
         sock.close()
         self.check_adb(["connect", "localhost:%d" % port])
         self.scan_transport(port)
-        self.check_adb(["wait-for-device"], timeout=120)
+        self.check_adb(["wait-for-device"], timeout=300)
         self.adb_root()
 
         # Files put onto the data partition in the Android build will not
@@ -641,7 +641,7 @@ c
         self.check_adb(["disconnect", "localhost:%d" % port])
 
         # Wait until QEMU's forward has expired
-        CONNECT_MAX_TRIES = 120
+        CONNECT_MAX_TRIES = 300
         connect_tries = 0
         while True:
             try:
