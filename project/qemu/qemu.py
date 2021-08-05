@@ -790,7 +790,7 @@ c
             ports = alloc_ports()
 
             # Write expected serial number (as given in adb) to stdout.
-            sys.stdout.write('DEVICE_SERIAL: emulator-%d\n' % ports[0])
+            sys.stdout.write('DEVICE_SERIAL: localhost:%d\n' % ports[1])
             sys.stdout.flush()
 
             # Forward ADB ports in qemu
