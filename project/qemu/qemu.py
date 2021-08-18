@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 """Run Trusty under QEMU in different configurations"""
 import argparse
 import errno
@@ -120,8 +120,8 @@ class QEMUCommandPipe(object):
         self.com_pipe_out = None
 
     def open(self):
-        self.com_pipe_in = open("%s/com.in" % self.command_dir, "w", 0)
-        self.com_pipe_out = open("%s/com.out" % self.command_dir, "r", 0)
+        self.com_pipe_in = open("%s/com.in" % self.command_dir, "w")
+        self.com_pipe_out = open("%s/com.out" % self.command_dir, "r")
         self.qmp_command({"execute": "qmp_capabilities"})
 
     def close(self):
@@ -152,22 +152,23 @@ class QEMUCommandPipe(object):
 
         try:
             json.dump(qmp_command, self.com_pipe_in)
+            self.com_pipe_in.flush()
             for line in iter(self.com_pipe_out.readline, ""):
                 res = json.loads(line)
 
-                if res.has_key("error"):
+                if "error" in res:
                     sys.stderr.write("Command {} failed: {}\n".format(
                         qmp_command, res["error"]))
                     return res
 
-                if res.has_key("return"):
+                if "return" in res:
                     return res
 
-                if not res.has_key("QMP") and not res.has_key("event"):
+                if "QMP" not in res and "event" not in res:
                     # Print unexpected extra lines
                     sys.stderr.write("ignored:" + line)
         except IOError as e:
-            print "qmp_command error ignored", e
+            print("qmp_command error ignored", e)
 
     def qmp_execute(self, execute, arguments=None):
         """Send a qmp execute command and return result."""
@@ -181,7 +182,7 @@ class QEMUCommandPipe(object):
 
         res = self.qmp_execute("human-monitor-command",
                                {"command-line": monitor_command})
-        if res and res.has_key("return"):
+        if res and "return" in res:
             sys.stderr.write(res["return"])
 
 
@@ -196,7 +197,7 @@ def qemu_handle_error(command_pipe, debug_on_error):
 
     if debug_on_error:
         command_pipe.monitor_command("gdbserver")
-        print "Connect gdb, press enter when done "
+        print("Connect gdb, press enter when done ")
         select.select([sys.stdin], [], [])
         raw_input("\n")
 
@@ -222,7 +223,7 @@ def qemu_exit(command_pipe, qemu_proc, has_error, debug_on_error):
                 # If it's still not dead, take it out
                 if qemu_proc.poll() is None:
                     qemu_proc.kill()
-                    print "QEMU refused quit"
+                    print("QEMU refused quit")
                     unclean_exit = True
             qemu_proc.wait()
 
@@ -232,7 +233,7 @@ def qemu_exit(command_pipe, qemu_proc, has_error, debug_on_error):
         # This was an interactive run or a boot test
         # QEMU should not be running at this point
         if qemu_proc and (qemu_proc.poll() is None):
-            print "QEMU still running with no command channel"
+            print("QEMU still running with no command channel")
             qemu_proc.kill()
             qemu_proc.wait()
             unclean_exit = True
@@ -275,8 +276,6 @@ class Runner(object):
         self.qemu_arch_options = None
         self.test_timeout = DEFAULT_TIMEOUT if timeout is None else timeout
 
-        # Python 2.7 does not have subprocess.DEVNULL, emulate it
-        devnull = open(os.devnull, "r+")
         # If we're not verbose or interactive, squelch command output
         if verbose or self.interactive:
             self.stdout = None
@@ -290,7 +289,7 @@ class Runner(object):
         if self.interactive:
             self.stdin = None
         else:
-            self.stdin = devnull
+            self.stdin = subprocess.DEVNULL
 
         if self.config.arch == 'arm64' or self.config.arch == 'arm':
             self.qemu_arch_options = qemu_options.QemuArm64Options(self.config)
@@ -300,7 +299,7 @@ class Runner(object):
             raise ConfigError("Architecture unspecified or unsupported!")
 
         if self.boot_tests and self.debug:
-            print """\
+            print("""\
 Warning: Test selection does not work when --debug is set.
 To run a test in test runner, run in GDB:
 
@@ -311,14 +310,14 @@ next 6
 set cmdline="boottest your.port.here"
 set cmdline_len=sizeof("boottest your.port.here")-1
 c
-"""
+""")
 
     def error_dump_output(self):
         if self.dump_stdout_on_error:
             sys.stdout.flush()
             sys.stderr.write("System log:\n")
             self.stdout.seek(0)
-            sys.stderr.write(self.stdout.read())
+            sys.stderr.buffer.write(self.stdout.read())
 
     def get_qemu_arg_temp_file(self):
         """Returns a temp file that will be deleted after qemu exits."""
@@ -409,7 +408,7 @@ c
 
         """
         if self.msg_sock_conn:
-            self.msg_sock_conn.send(msg)
+            self.msg_sock_conn.send(msg.encode())
         else:
             sys.stderr.write("Connection has not been established yet!")
 
@@ -485,10 +484,12 @@ c
                             select.select([], [sys.stdout], [])
 
                 # Please align message structure definition in testrunner.
-                if ord(ret[0]) == 0:
-                    print_msg(ret[2 : 2 + ord(ret[1])])
-                elif ord(ret[0]) == 1:
-                    result = ord(ret[1])
+                if ret[0] == 0:
+                    msg_len = ret[1]
+                    msg = ret[2 : 2 + msg_len].decode()
+                    print_msg(msg)
+                elif ret[0] == 1:
+                    result = ret[1]
                     break
                 else:
                     # Unexpected type, return test result:TEST_FAILED
@@ -546,7 +547,7 @@ c
             # unlikely, to get a spurious timeout message and kill
             # if .wait() returns, this function is triggered, and then
             # .cancel() runs
-            print "Timed out (%d s)" % timeout
+            print("Timed out (%d s)" % timeout)
             if on_timeout:
                 on_timeout()
 
@@ -598,14 +599,15 @@ c
 
     def scan_transport(self, port, expect_none=False):
         """Given a port and `adb devices -l`, find the transport id"""
-        output = subprocess.check_output([self.adb_bin(), "devices", "-l"])
+        output = subprocess.check_output([self.adb_bin(), "devices", "-l"],
+                                         universal_newlines=True)
         match = re.search(r"localhost:%d.*transport_id:(\d+)" % port, output)
         if not match:
             if expect_none:
                 self.adb_transport = None
                 return
-            print "Failed to find transport for port %d in \n%s" % (port,
-                                                                    output)
+            print("Failed to find transport for port %d in \n%s" % (port,
+                                                                    output))
         self.adb_transport = int(match.group(1))
 
     def adb_up(self, port):
@@ -809,7 +811,7 @@ c
             self.msg_channel_wait_for_connection()
 
             if self.debug:
-                print "Run gdb and \"target remote :1234\" to debug"
+                print("Run gdb and \"target remote :1234\" to debug")
 
             try:
                 # Send request to boot secondary OS
@@ -871,7 +873,7 @@ c
 
 def main():
     argument_parser = argparse.ArgumentParser()
-    argument_parser.add_argument("-c", "--config", type=file)
+    argument_parser.add_argument("-c", "--config", type=argparse.FileType('r'))
     argument_parser.add_argument("--headless", action="store_true")
     argument_parser.add_argument("-v", "--verbose", action="store_true")
     argument_parser.add_argument("--debug", action="store_true")
@@ -913,14 +915,14 @@ def main():
 
     try:
         results = runner.run()
-        print "Command results: %r" % results
+        print("Command results: %r" % results)
 
         if any(results):
             sys.exit(1)
         else:
             sys.exit(0)
     except RunnerError as exn:
-        print exn
+        print(exn)
         sys.exit(2)
 
 

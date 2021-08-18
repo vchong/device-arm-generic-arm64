@@ -46,7 +46,8 @@ class QemuArm64Options(object):
             dtc = "%s/scripts/dtc/dtc" % self.config.linux
             dtb_to_dts_cmd = [dtc, "-q", "-O", "dts", dtb_gen.name]
             dtb_to_dts = subprocess.Popen(dtb_to_dts_cmd,
-                                          stdout=subprocess.PIPE)
+                                          stdout=subprocess.PIPE,
+                                          universal_newlines=True)
             dts = dtb_to_dts.communicate()[0]
             if dtb_to_dts.returncode != 0:
                 raise RunnerGenericError("dtb_to_dts failed with %d" %
@@ -61,7 +62,8 @@ class QemuArm64Options(object):
         dts_to_dtb_cmd = [dtc, "-q", "-O", "dtb"]
         dts_to_dtb = subprocess.Popen(dts_to_dtb_cmd,
                                       stdin=subprocess.PIPE,
-                                      stdout=dtb)
+                                      stdout=dtb,
+                                      universal_newlines=True)
         dts_to_dtb.communicate(dts)
         dts_to_dtb_ret = dts_to_dtb.wait()
         if dts_to_dtb_ret:

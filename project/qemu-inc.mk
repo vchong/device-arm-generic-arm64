@@ -199,7 +199,7 @@ $(RUN_SCRIPT): $(QEMU_SCRIPTS) $(QEMU_CONFIG)
 	@echo generating $@
 	@echo "#!/bin/sh" >$@
 	@echo 'SCRIPT_DIR=$$(dirname "$$0")' >>$@
-	@echo 'python2.7 "$$SCRIPT_DIR/$(QEMU_PY)" -c "$$SCRIPT_DIR/$(QEMU_CONFIG)" "$$@"' >>$@
+	@echo 'python3 "$$SCRIPT_DIR/$(QEMU_PY)" -c "$$SCRIPT_DIR/$(QEMU_CONFIG)" "$$@"' >>$@
 	@chmod +x $@
 
 EXTRA_BUILDDEPS += $(RUN_SCRIPT)
