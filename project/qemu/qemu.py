@@ -437,10 +437,12 @@ c
         result = 2
 
         if self.interactive:
-            args = ["-serial", "mon:stdio"] + args
+            #args = ["-serial", "mon:stdio"] + args
+            args = ["-serial", "tcp:localhost:5553"] + args
             #args = ["-serial", "tcp:localhost:5555"] + args
-            #print("###### Use -serial tcp:localhost:5552 instead of mon:stdio? #######")
+            #print("###### Use -serial tcp:localhost:5553 instead of mon:stdio? #######")
             # NO! Disabling mon:stdio will break adb!
+            # seems ok now
         elif self.verbose:
             # This still leaves stdin connected, but doesn't connect a monitor
             args = ["-serial", "stdio", "-monitor", "none"] + args
@@ -794,10 +796,12 @@ c
             # Logging and terminal monitor
             # Prepend so that it is the *first* serial port and avoid
             # conflicting with rpmb0.
-            args = ["-serial", "mon:stdio"] + args
+            #args = ["-serial", "mon:stdio"] + args
+            args = ["-serial", "tcp:localhost:5553"] + args
             #args = ["-serial", "tcp:localhost:5555"] + args
-            #print("###### Use -serial tcp:localhost:5552 instead of mon:stdio? #######")
+            #print("###### Use -serial tcp:localhost:5553 instead of mon:stdio? #######")
             # NO! Disabling mon:stdio will break adb!
+            # seems ok now
 
             # If we're noninteractive (e.g. testing) we need a command channel
             # to tell the guest to exit
