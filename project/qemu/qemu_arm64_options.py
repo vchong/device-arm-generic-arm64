@@ -15,7 +15,9 @@ class QemuArm64Options(object):
         #"-serial", "tcp:localhost:5553", # this is already done in qemu.py
         #"-serial", "tcp:localhost:5554",
         #"-serial", "tcp:localhost:5555",
-        "-s", "-S",
+        #"-s", "-S", # just pass --debug to trusty/build-root/build-qemu-generic-arm64/run
+                     # to enable -s -S
+                     # also pass --debug-on-error for register dump
         "-nographic", "-cpu", "cortex-a57", "-smp", "4", "-m", "1024", "-d",
         "unimp", "-semihosting-config", "enable,target=native", "-no-acpi",
     ]
