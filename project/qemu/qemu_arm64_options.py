@@ -19,7 +19,7 @@ class QemuArm64Options(object):
                      # to enable -s -S
                      # also pass --debug-on-error for register dump
         "-nographic", "-cpu", "cortex-a57", "-smp", "4", "-m", "1024", "-d",
-        "unimp", "-semihosting-config", "enable,target=native", "-no-acpi",
+        "unimp", "-semihosting-config", "enable=on,target=native", "-no-acpi",
     ]
 
     LINUX_ARGS = (
