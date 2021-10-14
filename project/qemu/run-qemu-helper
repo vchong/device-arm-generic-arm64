@@ -27,7 +27,7 @@ QEMU_ARGS=(
     -m 1024
     -bios bl1.bin
     -d unimp
-    -semihosting-config enable,target=native
+    -semihosting-config enable=on,target=native
     -no-acpi
     )
 QEMU_SERIAL_ARGS=(
