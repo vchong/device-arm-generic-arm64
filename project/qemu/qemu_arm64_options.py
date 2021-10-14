@@ -12,7 +12,7 @@ class QemuArm64Options(object):
 
     BASIC_ARGS = [
         "-serial", "tcp:localhost:5552",
-        "-serial", "tcp:localhost:5553",
+        #"-serial", "tcp:localhost:5553", # this is already done in qemu.py
         #"-serial", "tcp:localhost:5554",
         #"-serial", "tcp:localhost:5555",
         "-nographic", "-cpu", "cortex-a57", "-smp", "4", "-m", "1024", "-d",
