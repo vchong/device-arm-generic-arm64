@@ -108,6 +108,7 @@ def forward_ports(ports):
     for port in ports:
         forwards += ["hostfwd=tcp::%d-:%d" % (port, remap_port)]
         remap_port = remap_port + 1
+    forwards += ["hostfwd=tcp::12345-:12345"]
     return [
         "-device", "virtio-net,netdev=adbnet0", "-netdev",
         "user,id=adbnet0,%s" % ",".join(forwards)
