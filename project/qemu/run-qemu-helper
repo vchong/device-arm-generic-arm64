@@ -32,6 +32,7 @@ QEMU_ARGS=(
     )
 QEMU_SERIAL_ARGS=(
     -serial mon:stdio
+    #-serial tcp:localhost:5555
     )
 for ARG in "$@"; do
     if [ "${ARG}" = "-S" ]; then

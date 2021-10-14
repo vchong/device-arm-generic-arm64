@@ -21,6 +21,7 @@ from qemu_error import AdbFailure, ConfigError, RunnerGenericError, RunnerError,
 
 # ADB expects its first console on 5554, and control on 5555
 ADB_BASE_PORT = 5554
+#ADB_BASE_PORT = 5552
 
 
 class Config(object):
@@ -72,17 +73,27 @@ def alloc_ports():
     # We can't actually reserve ports atomically for QEMU, but we can at
     # least scan and find two that are not currently in use.
     min_port = ADB_BASE_PORT
+    print("min_port: ", min_port)
+    print("ADB_BASE_PORT: ", ADB_BASE_PORT)
     while True:
         alloced_ports = []
         for port in range(min_port, min_port + PORT_WIDTH):
             # If the port is already in use, don't hand it out
             try:
+                print("port test: ", port)
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.connect(("localhost", port))
+                print("port ok: ", port)
                 break
             except IOError:
+                # we want to use port and port+1 that failed to sock.connect
+                # and generated IOError exception here
+                print("port error: ", port)
                 alloced_ports += [port]
+                print("alloced_ports: ", alloced_ports)
         if len(alloced_ports) == PORT_WIDTH:
+            #return [5552, 5553]
+            #return [5554, 5555]
             return alloced_ports
 
         # We could increment by only 1, but if we are competing with other
@@ -428,6 +439,7 @@ c
 
         if self.interactive:
             args = ["-serial", "mon:stdio"] + args
+            #args = ["-serial", "tcp:localhost:5555"] + args
             #print("###### Use -serial tcp:localhost:5552 instead of mon:stdio? #######")
             # NO! Disabling mon:stdio will break adb!
         elif self.verbose:
@@ -781,6 +793,7 @@ c
             # Prepend so that it is the *first* serial port and avoid
             # conflicting with rpmb0.
             args = ["-serial", "mon:stdio"] + args
+            #args = ["-serial", "tcp:localhost:5555"] + args
             #print("###### Use -serial tcp:localhost:5552 instead of mon:stdio? #######")
             # NO! Disabling mon:stdio will break adb!
 
