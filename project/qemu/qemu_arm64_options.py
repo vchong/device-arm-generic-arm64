@@ -24,7 +24,7 @@ class QemuArm64Options(object):
 
     LINUX_ARGS = (
         "earlyprintk console=ttyAMA0,38400 keep_bootcon "
-        "loglevel=7 androidboot.selinux=permissive "
+        "loglevel=7 printk.devkmsg=on androidboot.selinux=permissive "
         "root=/dev/vda init=/init androidboot.hardware=qemu_trusty")
 
     def __init__(self, config):
